@@ -49,6 +49,8 @@ const Company = () => {
 
     const [saving, setSaving] = useState(false);
 
+    const [toggleLoadingId, setToggleLoadingId] = useState(null);
+
     const pageSize = 10;
 
     // =========================================================
@@ -304,6 +306,57 @@ const Company = () => {
     };
 
     // =========================================================
+    // TOGGLE ACTIVE STATUS
+    // =========================================================
+
+    const toggleCompanyStatus = async (
+        companyId,
+        currentStatus
+    ) => {
+
+        try {
+
+            setToggleLoadingId(companyId);
+
+            await api.patch(
+                `/companies/${companyId}`,
+                {
+                    active: !currentStatus
+                }
+            );
+
+            // UPDATE LOCAL STATE
+
+            setCompanies((prevCompanies) =>
+
+                prevCompanies.map((company) =>
+
+                    company.companyId === companyId
+
+                        ? {
+                            ...company,
+                            active: !currentStatus
+                        }
+
+                        : company
+                )
+            );
+
+        } catch (err) {
+
+            alert(
+                err.response?.data?.message
+                ||
+                'Failed to update status'
+            );
+
+        } finally {
+
+            setToggleLoadingId(null);
+        }
+    };
+
+    // =========================================================
     // LOADING
     // =========================================================
 
@@ -442,29 +495,58 @@ const Company = () => {
                                             {company.cabbr}
                                         </td>
 
+                                        {/* ================================= */}
+                                        {/* TOGGLE BUTTON */}
+                                        {/* ================================= */}
+
                                         <td className='px-6 py-4'>
 
-                                            {
-                                                company.active ? (
+                                            <button
+                                                onClick={() =>
+                                                    toggleCompanyStatus(
+                                                        company.companyId,
+                                                        company.active
+                                                    )
+                                                }
+                                                disabled={
+                                                    toggleLoadingId === company.companyId
+                                                }
+                                                className={`
+                                                    relative inline-flex h-7 w-14
+                                                    items-center rounded-full
+                                                    transition-all duration-300
+                                                    focus:outline-none
 
-                                                    <span
-                                                        className='bg-green-100 text-green-700
-                                                        px-3 py-1 rounded-full text-xs font-semibold'
-                                                    >
-                                                        Active
-                                                    </span>
+                                                    ${
+                                                        company.active
+                                                            ? 'bg-green-500'
+                                                            : 'bg-red-500'
+                                                    }
 
-                                                ) : (
+                                                    ${
+                                                        toggleLoadingId === company.companyId
+                                                            ? 'opacity-50 cursor-not-allowed'
+                                                            : 'cursor-pointer'
+                                                    }
+                                                `}
+                                            >
 
-                                                    <span
-                                                        className='bg-red-100 text-red-700
-                                                        px-3 py-1 rounded-full text-xs font-semibold'
-                                                    >
-                                                        Inactive
-                                                    </span>
+                                                <span
+                                                    className={`
+                                                        inline-block h-5 w-5
+                                                        transform rounded-full
+                                                        bg-white transition-all
+                                                        duration-300 shadow-md
 
-                                                )
-                                            }
+                                                        ${
+                                                            company.active
+                                                                ? 'translate-x-8'
+                                                                : 'translate-x-1'
+                                                        }
+                                                    `}
+                                                />
+
+                                            </button>
 
                                         </td>
 
