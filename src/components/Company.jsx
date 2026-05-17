@@ -1,61 +1,69 @@
 import React, { useEffect, useState } from 'react';
-
 import axios from 'axios';
 
 const Company = () => {
-
-    // =========================================================
-    // AXIOS INSTANCE
-    // =========================================================
 
     const api = axios.create({
         baseURL: 'http://localhost:8080/api'
     });
 
-    // =========================================================
+    // =====================================================
     // STATES
-    // =========================================================
+    // =====================================================
 
     const [companies, setCompanies] = useState([]);
-
     const [loading, setLoading] = useState(false);
 
-    const [error, setError] = useState('');
-
     const [currentPage, setCurrentPage] = useState(0);
-
     const [totalPages, setTotalPages] = useState(0);
-
     const [totalElements, setTotalElements] = useState(0);
 
     const [searchTerm, setSearchTerm] = useState('');
 
     const [sortField, setSortField] = useState('companyId');
-
     const [sortDirection, setSortDirection] = useState('asc');
 
-    const [openModal, setOpenModal] = useState(false);
-
-    // =========================================================
-    // FORM STATES
-    // =========================================================
-
-    const [formData, setFormData] = useState({
-        cname: '',
-        cabbr: ''
-    });
-
-    const [formErrors, setFormErrors] = useState({});
+    const [openAddModal, setOpenAddModal] = useState(false);
+    const [openEditModal, setOpenEditModal] = useState(false);
 
     const [saving, setSaving] = useState(false);
+    const [editSaving, setEditSaving] = useState(false);
 
-    const [toggleLoadingId, setToggleLoadingId] = useState(null);
+    const [toggleLoadingId, setToggleLoadingId] =
+        useState(null);
+
+    const [formErrors, setFormErrors] = useState({});
+    const [editErrors, setEditErrors] = useState({});
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState('');
 
     const pageSize = 10;
 
-    // =========================================================
+    // =====================================================
+    // FORM STATES
+    // =====================================================
+
+    const initialForm = {
+        cname: '',
+        cabbr: ''
+    };
+
+    const initialEditForm = {
+        companyId: '',
+        cname: '',
+        cabbr: ''
+    };
+
+    const [formData, setFormData] =
+        useState(initialForm);
+
+    const [editFormData, setEditFormData] =
+        useState(initialEditForm);
+
+    // =====================================================
     // FETCH COMPANIES
-    // =========================================================
+    // =====================================================
 
     const fetchCompanies = async (
         page = 0,
@@ -68,23 +76,22 @@ const Company = () => {
 
             setLoading(true);
 
-            const response = await api.get('/companies/page', {
-
-                params: {
-                    page: page,
-                    size: pageSize,
-                    sort: `${field},${direction}`
+            const response = await api.get(
+                '/companies/page',
+                {
+                    params: {
+                        page,
+                        size: pageSize,
+                        sort: `${field},${direction}`
+                    }
                 }
+            );
 
-            });
+            let data = response.data.data.content;
 
-            let fetchedCompanies = response.data.data.content;
+            if (search.trim()) {
 
-            // SEARCH
-
-            if (search.trim() !== '') {
-
-                fetchedCompanies = fetchedCompanies.filter((company) =>
+                data = data.filter(company =>
 
                     company.cname
                         .toLowerCase()
@@ -98,17 +105,19 @@ const Company = () => {
                 );
             }
 
-            setCompanies(fetchedCompanies);
+            setCompanies(data);
 
             setCurrentPage(response.data.data.number);
 
             setTotalPages(response.data.data.totalPages);
 
-            setTotalElements(response.data.data.totalElements);
+            setTotalElements(
+                response.data.data.totalElements
+            );
 
-        } catch (err) {
+        } catch {
 
-            setError('Failed to fetch companies');
+            alert('Failed to fetch companies');
 
         } finally {
 
@@ -116,9 +125,9 @@ const Company = () => {
         }
     };
 
-    // =========================================================
-    // INITIAL LOAD
-    // =========================================================
+    // =====================================================
+    // EFFECTS
+    // =====================================================
 
     useEffect(() => {
 
@@ -131,13 +140,9 @@ const Company = () => {
 
     }, [currentPage, sortField, sortDirection]);
 
-    // =========================================================
-    // SEARCH
-    // =========================================================
-
     useEffect(() => {
 
-        const delayDebounce = setTimeout(() => {
+        const debounce = setTimeout(() => {
 
             fetchCompanies(
                 0,
@@ -150,13 +155,13 @@ const Company = () => {
 
         }, 400);
 
-        return () => clearTimeout(delayDebounce);
+        return () => clearTimeout(debounce);
 
     }, [searchTerm]);
 
-    // =========================================================
-    // SORTING
-    // =========================================================
+    // =====================================================
+    // COMMON FUNCTIONS
+    // =====================================================
 
     const handleSort = (field) => {
 
@@ -176,89 +181,66 @@ const Company = () => {
         }
     };
 
-    const getSortIcon = (field) => {
+    const getSortIcon = (field) =>
 
-        if (sortField !== field) {
-            return '⇅';
-        }
+        sortField !== field
+            ? '⇅'
+            : sortDirection === 'asc'
+                ? '▲'
+                : '▼';
 
-        return sortDirection === 'asc'
-            ? '▲'
-            : '▼';
-    };
-
-    // =========================================================
-    // PAGINATION
-    // =========================================================
-
-    const handlePrevious = () => {
-
-        if (currentPage > 0) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
-
-    const handleNext = () => {
-
-        if (currentPage < totalPages - 1) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
-
-    // =========================================================
-    // INPUT CHANGE
-    // =========================================================
-
-    const handleChange = (e) => {
-
-        const { name, value } = e.target;
-
-        setFormData({
-            ...formData,
-            [name]: value
-        });
-
-        setFormErrors({
-            ...formErrors,
-            [name]: ''
-        });
-    };
-
-    // =========================================================
-    // VALIDATION
-    // =========================================================
-
-    const validateForm = () => {
+    const validate = (data, setErrors) => {
 
         const errors = {};
 
-        if (!formData.cname.trim()) {
+        if (!data.cname.trim()) {
             errors.cname = 'Company name is required';
         }
 
-        if (!formData.cabbr.trim()) {
-            errors.cabbr = 'Company abbreviation is required';
-        }
-
-        if (formData.cabbr.length > 10) {
+        if (!data.cabbr.trim()) {
             errors.cabbr =
-                'Company abbreviation cannot exceed 10 characters';
+                'Company abbreviation is required';
         }
 
-        setFormErrors(errors);
+        if (data.cabbr.length > 10) {
+            errors.cabbr =
+                'Maximum 10 characters allowed';
+        }
+
+        setErrors(errors);
 
         return Object.keys(errors).length === 0;
     };
 
-    // =========================================================
-    // SAVE COMPANY
-    // =========================================================
+    const handleChange = (
+        e,
+        setter,
+        errors,
+        setErrors
+    ) => {
+
+        const { name, value } = e.target;
+
+        setter(prev => ({
+            ...prev,
+            [name]: value
+        }));
+
+        setErrors({
+            ...errors,
+            [name]: ''
+        });
+    };
+
+    // =====================================================
+    // ADD COMPANY
+    // =====================================================
 
     const saveCompany = async (e) => {
 
         e.preventDefault();
 
-        if (!validateForm()) {
+        if (!validate(formData, setFormErrors)) {
             return;
         }
 
@@ -268,20 +250,9 @@ const Company = () => {
 
             await api.post('/companies', formData);
 
-            // RESET FORM
+            setFormData(initialForm);
 
-            setFormData({
-                cname: '',
-                cabbr: ''
-            });
-
-            setFormErrors({});
-
-            // CLOSE MODAL
-
-            setOpenModal(false);
-
-            // REFRESH TABLE
+            setOpenAddModal(false);
 
             fetchCompanies(
                 currentPage,
@@ -295,8 +266,6 @@ const Company = () => {
             setFormErrors({
                 apiError:
                     err.response?.data?.message
-                    ||
-                    'Failed to save company'
             });
 
         } finally {
@@ -305,9 +274,115 @@ const Company = () => {
         }
     };
 
-    // =========================================================
-    // TOGGLE ACTIVE STATUS
-    // =========================================================
+    // =====================================================
+    // EDIT COMPANY
+    // =====================================================
+
+    const handleEditClick = (company) => {
+
+        setEditFormData(company);
+
+        setEditErrors({});
+
+        setOpenEditModal(true);
+    };
+
+    const updateCompany = async (e) => {
+
+        e.preventDefault();
+
+        if (!validate(editFormData, setEditErrors)) {
+            return;
+        }
+
+        try {
+
+            setEditSaving(true);
+
+            await api.patch(
+
+                `/companies/${editFormData.companyId}`,
+
+                {
+                    cname: editFormData.cname,
+                    cabbr: editFormData.cabbr
+                }
+            );
+
+            setCompanies(prev =>
+
+                prev.map(company =>
+
+                    company.companyId ===
+                    editFormData.companyId
+
+                        ? {
+                            ...company,
+                            cname: editFormData.cname,
+                            cabbr: editFormData.cabbr,
+                            updatedAt:
+                                new Date().toISOString()
+                        }
+
+                        : company
+                )
+            );
+
+            setOpenEditModal(false);
+
+        } catch (err) {
+
+            setEditErrors({
+                apiError:
+                    err.response?.data?.message
+            });
+
+        } finally {
+
+            setEditSaving(false);
+        }
+    };
+
+    // =====================================================
+    // DELETE COMPANY
+    // =====================================================
+
+    const confirmDelete = (company) => {
+        setDeleteError('');
+        setDeleteTarget(company);
+    };
+
+    const deleteCompany = async () => {
+        if (!deleteTarget) return;
+
+        try {
+            setDeleting(true);
+
+            await api.delete(
+                `/companies/${deleteTarget.companyId}`
+            );
+
+            setCompanies(prev =>
+                prev.filter(
+                    company =>
+                        company.companyId !== deleteTarget.companyId
+                )
+            );
+
+            setDeleteTarget(null);
+        } catch (err) {
+            setDeleteError(
+                err.response?.data?.message ||
+                'Unable to delete this company. Please try again.'
+            );
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    // =====================================================
+    // TOGGLE STATUS
+    // =====================================================
 
     const toggleCompanyStatus = async (
         companyId,
@@ -325,17 +400,17 @@ const Company = () => {
                 }
             );
 
-            // UPDATE LOCAL STATE
+            setCompanies(prev =>
 
-            setCompanies((prevCompanies) =>
-
-                prevCompanies.map((company) =>
+                prev.map(company =>
 
                     company.companyId === companyId
 
                         ? {
                             ...company,
-                            active: !currentStatus
+                            active: !currentStatus,
+                            updatedAt:
+                                new Date().toISOString()
                         }
 
                         : company
@@ -346,8 +421,6 @@ const Company = () => {
 
             alert(
                 err.response?.data?.message
-                ||
-                'Failed to update status'
             );
 
         } finally {
@@ -356,17 +429,249 @@ const Company = () => {
         }
     };
 
-    // =========================================================
+    // =====================================================
+    // MODAL COMPONENT
+    // =====================================================
+
+    const CompanyModal = ({
+        title,
+        data,
+        errors,
+        setData,
+        setErrors,
+        onSubmit,
+        onClose,
+        loading,
+        buttonText
+    }) => (
+
+        <div
+            className='fixed inset-0 bg-black/40
+            flex justify-center items-center z-50'
+        >
+
+            <div
+                className='bg-white w-full max-w-md
+                rounded-2xl shadow-2xl p-6'
+            >
+
+                <div className='flex justify-between mb-5'>
+
+                    <h2
+                        className='text-2xl font-bold
+                        text-cyan-700'
+                    >
+                        {title}
+                    </h2>
+
+                    <button
+                        onClick={onClose}
+                        className='text-xl'
+                    >
+                        ✕
+                    </button>
+
+                </div>
+
+                <form onSubmit={onSubmit}>
+
+                    {
+                        errors.apiError && (
+
+                            <div
+                                className='bg-red-100
+                                text-red-700 p-3 rounded-lg mb-4'
+                            >
+                                {errors.apiError}
+                            </div>
+                        )
+                    }
+
+                    {
+                        ['cname', 'cabbr'].map(field => (
+
+                            <div
+                                key={field}
+                                className='mb-4'
+                            >
+
+                                <label
+                                    className='block mb-2
+                                    font-semibold'
+                                >
+                                    {
+                                        field === 'cname'
+                                            ? 'Company Name'
+                                            : 'Company Abbreviation'
+                                    }
+                                </label>
+
+                                <input
+                                    type='text'
+                                    name={field}
+                                    value={data[field]}
+                                    onChange={(e) =>
+                                        handleChange(
+                                            e,
+                                            setData,
+                                            errors,
+                                            setErrors
+                                        )
+                                    }
+                                    className='w-full border
+                                    rounded-lg px-4 py-2
+                                    focus:ring-2
+                                    focus:ring-cyan-500'
+                                />
+
+                                {
+                                    errors[field] && (
+
+                                        <p
+                                            className='text-red-600
+                                            text-sm mt-1'
+                                        >
+                                            {errors[field]}
+                                        </p>
+                                    )
+                                }
+
+                            </div>
+                        ))
+                    }
+
+                    <div className='flex justify-end gap-3 mt-5'>
+
+                        <button
+                            type='button'
+                            onClick={onClose}
+                            className='px-5 py-2 border
+                            rounded-lg hover:bg-gray-100'
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type='submit'
+                            disabled={loading}
+                            className='bg-cyan-700
+                            hover:bg-cyan-800
+                            text-white px-5 py-2
+                            rounded-lg'
+                        >
+                            {
+                                loading
+                                    ? 'Processing...'
+                                    : buttonText
+                            }
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+    );
+
+    const DeleteConfirmationModal = ({
+        company,
+        onCancel,
+        onConfirm,
+        loading,
+        error
+    }) => (
+
+        <div
+            className='fixed inset-0 bg-black/40
+            flex justify-center items-center z-50'
+        >
+
+            <div
+                className='bg-white w-full max-w-md
+                rounded-2xl shadow-2xl p-6'
+            >
+
+                <div className='flex justify-between mb-5'>
+
+                    <h2
+                        className='text-2xl font-bold
+                        text-cyan-700'
+                    >
+                        Confirm Deletion
+                    </h2>
+
+                    <button
+                        onClick={onCancel}
+                        className='text-xl'
+                    >
+                        ✕
+                    </button>
+
+                </div>
+
+                <p className='text-gray-700 mb-4'>
+                    Are you sure you want to permanently delete
+                    the company <strong>{company?.cname}</strong>? This action cannot be undone.
+                </p>
+
+                {error && (
+                    <div
+                        className='bg-red-100 text-red-700
+                        p-3 rounded-lg mb-4'
+                    >
+                        {error}
+                    </div>
+                )}
+
+                <div className='flex justify-end gap-3 mt-5'>
+
+                    <button
+                        type='button'
+                        onClick={onCancel}
+                        className='px-5 py-2 border
+                        rounded-lg hover:bg-gray-100'
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type='button'
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className='bg-red-700
+                        hover:bg-red-800
+                        text-white px-5 py-2
+                        rounded-lg'
+                    >
+                        {loading ? 'Deleting...' : 'Delete Company'}
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+    );
+
+    // =====================================================
     // LOADING
-    // =========================================================
+    // =====================================================
 
     if (loading) {
 
         return (
 
-            <div className='flex justify-center items-center h-52'>
+            <div
+                className='flex justify-center
+                items-center h-52'
+            >
 
-                <h1 className='text-2xl font-bold text-cyan-700'>
+                <h1
+                    className='text-2xl font-bold
+                    text-cyan-700'
+                >
                     Loading Companies...
                 </h1>
 
@@ -374,31 +679,39 @@ const Company = () => {
         );
     }
 
+    // =====================================================
+    // UI
+    // =====================================================
+
     return (
 
         <div className='p-6'>
 
-            {/* ================================================= */}
             {/* HEADER */}
-            {/* ================================================= */}
 
-            <div className='flex flex-col md:flex-row justify-between items-center gap-4 mb-6'>
+            <div
+                className='flex flex-col md:flex-row
+                justify-between items-center gap-4 mb-6'
+            >
 
                 <div>
 
-                    <h1 className='text-3xl font-bold text-cyan-700'>
+                    <h1
+                        className='text-3xl font-bold
+                        text-cyan-700'
+                    >
                         Company Management
                     </h1>
 
                     <p className='text-gray-500 mt-1'>
-                        Total Companies : {totalElements}
+                        Total Companies :
+                        {' '}
+                        {totalElements}
                     </p>
 
                 </div>
 
-                <div className='flex gap-3 w-full md:w-auto'>
-
-                    {/* SEARCH */}
+                <div className='flex gap-3'>
 
                     <input
                         type='text'
@@ -407,17 +720,19 @@ const Company = () => {
                         onChange={(e) =>
                             setSearchTerm(e.target.value)
                         }
-                        className='border border-gray-300 rounded-lg px-4 py-2
-                        focus:outline-none focus:ring-2 focus:ring-cyan-500'
+                        className='border rounded-lg
+                        px-4 py-2 focus:ring-2
+                        focus:ring-cyan-500'
                     />
 
-                    {/* ADD BUTTON */}
-
                     <button
-                        onClick={() => setOpenModal(true)}
-                        className='bg-cyan-700 hover:bg-cyan-800
-                        text-white font-semibold px-5 py-2 rounded-lg
-                        shadow-md transition'
+                        onClick={() =>
+                            setOpenAddModal(true)
+                        }
+                        className='bg-cyan-700
+                        hover:bg-cyan-800
+                        text-white px-5 py-2
+                        rounded-lg'
                     >
                         + Add Company
                     </button>
@@ -426,45 +741,56 @@ const Company = () => {
 
             </div>
 
-            {/* ================================================= */}
             {/* TABLE */}
-            {/* ================================================= */}
 
-            <div className='overflow-x-auto bg-white rounded-xl shadow-lg border border-gray-200'>
+            <div
+                className='overflow-x-auto bg-white
+                rounded-xl shadow-lg border'
+            >
 
-                <table className='min-w-full text-sm text-left'>
+                <table className='min-w-full text-sm'>
 
-                    <thead className='bg-cyan-700 text-white uppercase text-xs'>
+                    <thead
+                        className='bg-cyan-700
+                        text-white uppercase text-xs'
+                    >
 
                         <tr>
 
-                            <th
-                                onClick={() => handleSort('companyId')}
-                                className='px-6 py-4 cursor-pointer'
-                            >
-                                ID {getSortIcon('companyId')}
-                            </th>
+                            {
+                                [
+                                    ['companyId', 'ID'],
+                                    ['cname', 'Company Name'],
+                                    ['cabbr', 'Abbreviation'],
+                                    ['createdAt', 'Created At'],
+                                    ['updatedAt', 'Updated At']
+                                ].map(([field, label]) => (
 
-                            <th
-                                onClick={() => handleSort('cname')}
-                                className='px-6 py-4 cursor-pointer'
-                            >
-                                Company Name {getSortIcon('cname')}
-                            </th>
-
-                            <th
-                                onClick={() => handleSort('cabbr')}
-                                className='px-6 py-4 cursor-pointer'
-                            >
-                                Abbreviation {getSortIcon('cabbr')}
-                            </th>
+                                    <th
+                                        key={field}
+                                        onClick={() =>
+                                            handleSort(field)
+                                        }
+                                        className='px-6 py-4
+                                        cursor-pointer'
+                                    >
+                                        {label}
+                                        {' '}
+                                        {getSortIcon(field)}
+                                    </th>
+                                ))
+                            }
 
                             <th className='px-6 py-4'>
                                 Status
                             </th>
 
-                            <th className='px-6 py-4'>
-                                Created At
+                            <th className='px-6 py-4 text-center'>
+                                Edit
+                            </th>
+
+                            <th className='px-6 py-4 text-center'>
+                                Delete
                             </th>
 
                         </tr>
@@ -476,18 +802,22 @@ const Company = () => {
                         {
                             companies.length > 0 ? (
 
-                                companies.map((company) => (
+                                companies.map(company => (
 
                                     <tr
                                         key={company.companyId}
-                                        className='border-b hover:bg-cyan-50'
+                                        className='border-b
+                                        hover:bg-cyan-50'
                                     >
 
                                         <td className='px-6 py-4'>
                                             {company.companyId}
                                         </td>
 
-                                        <td className='px-6 py-4 font-semibold'>
+                                        <td
+                                            className='px-6 py-4
+                                            font-semibold'
+                                        >
                                             {company.cname}
                                         </td>
 
@@ -495,9 +825,29 @@ const Company = () => {
                                             {company.cabbr}
                                         </td>
 
-                                        {/* ================================= */}
-                                        {/* TOGGLE BUTTON */}
-                                        {/* ================================= */}
+                                        <td
+                                            className='px-6 py-4
+                                            text-gray-500'
+                                        >
+                                            {
+                                                new Date(
+                                                    company.createdAt
+                                                ).toLocaleString()
+                                            }
+                                        </td>
+
+                                        <td
+                                            className='px-6 py-4
+                                            text-gray-500'
+                                        >
+                                            {
+                                                new Date(
+                                                    company.updatedAt
+                                                ).toLocaleString()
+                                            }
+                                        </td>
+
+                                        {/* STATUS */}
 
                                         <td className='px-6 py-4'>
 
@@ -509,34 +859,27 @@ const Company = () => {
                                                     )
                                                 }
                                                 disabled={
-                                                    toggleLoadingId === company.companyId
+                                                    toggleLoadingId ===
+                                                    company.companyId
                                                 }
                                                 className={`
-                                                    relative inline-flex h-7 w-14
-                                                    items-center rounded-full
-                                                    transition-all duration-300
-                                                    focus:outline-none
+                                                    relative inline-flex
+                                                    h-7 w-14 items-center
+                                                    rounded-full
 
                                                     ${
                                                         company.active
                                                             ? 'bg-green-500'
                                                             : 'bg-red-500'
                                                     }
-
-                                                    ${
-                                                        toggleLoadingId === company.companyId
-                                                            ? 'opacity-50 cursor-not-allowed'
-                                                            : 'cursor-pointer'
-                                                    }
                                                 `}
                                             >
 
                                                 <span
                                                     className={`
-                                                        inline-block h-5 w-5
-                                                        transform rounded-full
-                                                        bg-white transition-all
-                                                        duration-300 shadow-md
+                                                        h-5 w-5 bg-white
+                                                        rounded-full
+                                                        transition-all
 
                                                         ${
                                                             company.active
@@ -550,11 +893,46 @@ const Company = () => {
 
                                         </td>
 
-                                        <td className='px-6 py-4 text-gray-500'>
-                                            {
-                                                new Date(company.createdAt)
-                                                    .toLocaleString()
-                                            }
+                                        {/* EDIT */}
+
+                                        <td
+                                            className='px-6 py-4
+                                            text-center'
+                                        >
+
+                                            <button
+                                                onClick={() =>
+                                                    handleEditClick(company)
+                                                }
+                                                className='bg-blue-100
+                                                hover:bg-blue-200
+                                                text-blue-700
+                                                p-2 rounded-lg'
+                                            >
+                                                ✏️
+                                            </button>
+
+                                        </td>
+
+                                        {/* DELETE */}
+
+                                        <td
+                                            className='px-6 py-4
+                                            text-center'
+                                        >
+
+                                            <button
+                                                onClick={() =>
+                                                    confirmDelete(company)
+                                                }
+                                                className='bg-red-100
+                                                hover:bg-red-200
+                                                text-red-700
+                                                p-2 rounded-lg'
+                                            >
+                                                🗑️
+                                            </button>
+
                                         </td>
 
                                     </tr>
@@ -566,8 +944,9 @@ const Company = () => {
                                 <tr>
 
                                     <td
-                                        colSpan='5'
-                                        className='text-center py-6 text-gray-500'
+                                        colSpan='8'
+                                        className='text-center
+                                        py-6 text-gray-500'
                                     >
                                         No Companies Found
                                     </td>
@@ -582,194 +961,102 @@ const Company = () => {
 
             </div>
 
-            {/* ================================================= */}
             {/* PAGINATION */}
-            {/* ================================================= */}
 
-            <div className='flex justify-between items-center mt-6'>
+            <div
+                className='flex justify-between
+                items-center mt-6'
+            >
 
                 <button
-                    onClick={handlePrevious}
+                    onClick={() =>
+                        setCurrentPage(prev => prev - 1)
+                    }
                     disabled={currentPage === 0}
-                    className={`
-                        px-5 py-2 rounded-lg font-semibold
-
-                        ${
-                            currentPage === 0
-                                ? 'bg-gray-300 cursor-not-allowed'
-                                : 'bg-cyan-700 text-white hover:bg-cyan-800'
-                        }
-                    `}
+                    className='px-5 py-2 rounded-lg
+                    bg-cyan-700 text-white
+                    disabled:bg-gray-300'
                 >
                     Previous
                 </button>
 
-                <div className='font-medium text-gray-700'>
-                    Page {currentPage + 1} of {totalPages}
+                <div className='font-medium'>
+                    Page
+                    {' '}
+                    {currentPage + 1}
+                    {' '}
+                    of
+                    {' '}
+                    {totalPages}
                 </div>
 
                 <button
-                    onClick={handleNext}
-                    disabled={currentPage === totalPages - 1}
-                    className={`
-                        px-5 py-2 rounded-lg font-semibold
-
-                        ${
-                            currentPage === totalPages - 1
-                                ? 'bg-gray-300 cursor-not-allowed'
-                                : 'bg-cyan-700 text-white hover:bg-cyan-800'
-                        }
-                    `}
+                    onClick={() =>
+                        setCurrentPage(prev => prev + 1)
+                    }
+                    disabled={
+                        currentPage === totalPages - 1
+                    }
+                    className='px-5 py-2 rounded-lg
+                    bg-cyan-700 text-white
+                    disabled:bg-gray-300'
                 >
                     Next
                 </button>
 
             </div>
 
-            {/* ================================================= */}
-            {/* MODAL */}
-            {/* ================================================= */}
+            {/* ADD MODAL */}
 
             {
-                openModal && (
+                openAddModal && (
 
-                    <div
-                        className='fixed inset-0 bg-black bg-opacity-40
-                        flex justify-center items-center z-50'
-                    >
+                    <CompanyModal
+                        title='Add Company'
+                        data={formData}
+                        errors={formErrors}
+                        setData={setFormData}
+                        setErrors={setFormErrors}
+                        onSubmit={saveCompany}
+                        onClose={() =>
+                            setOpenAddModal(false)
+                        }
+                        loading={saving}
+                        buttonText='Save Company'
+                    />
+                )
+            }
 
-                        <div
-                            className='bg-white rounded-2xl shadow-2xl
-                            w-full max-w-md p-6'
-                        >
+            {/* EDIT MODAL */}
 
-                            {/* HEADER */}
+            {
+                openEditModal && (
 
-                            <div className='flex justify-between items-center mb-5'>
+                    <CompanyModal
+                        title='Edit Company'
+                        data={editFormData}
+                        errors={editErrors}
+                        setData={setEditFormData}
+                        setErrors={setEditErrors}
+                        onSubmit={updateCompany}
+                        onClose={() =>
+                            setOpenEditModal(false)
+                        }
+                        loading={editSaving}
+                        buttonText='Update Company'
+                    />
+                )
+            }
 
-                                <h2 className='text-2xl font-bold text-cyan-700'>
-                                    Add Company
-                                </h2>
-
-                                <button
-                                    onClick={() => setOpenModal(false)}
-                                    className='text-gray-500 hover:text-red-600 text-xl'
-                                >
-                                    ✕
-                                </button>
-
-                            </div>
-
-                            {/* FORM */}
-
-                            <form onSubmit={saveCompany}>
-
-                                {/* API ERROR */}
-
-                                {
-                                    formErrors.apiError && (
-
-                                        <div
-                                            className='bg-red-100 text-red-700
-                                            px-4 py-3 rounded-lg mb-4'
-                                        >
-                                            {formErrors.apiError}
-                                        </div>
-                                    )
-                                }
-
-                                {/* COMPANY NAME */}
-
-                                <div className='mb-4'>
-
-                                    <label className='block mb-2 font-semibold text-gray-700'>
-                                        Company Name
-                                    </label>
-
-                                    <input
-                                        type='text'
-                                        name='cname'
-                                        value={formData.cname}
-                                        onChange={handleChange}
-                                        className='w-full border border-gray-300
-                                        rounded-lg px-4 py-2 focus:outline-none
-                                        focus:ring-2 focus:ring-cyan-500'
-                                    />
-
-                                    {
-                                        formErrors.cname && (
-
-                                            <p className='text-red-600 text-sm mt-1'>
-                                                {formErrors.cname}
-                                            </p>
-                                        )
-                                    }
-
-                                </div>
-
-                                {/* COMPANY ABBR */}
-
-                                <div className='mb-5'>
-
-                                    <label className='block mb-2 font-semibold text-gray-700'>
-                                        Company Abbreviation
-                                    </label>
-
-                                    <input
-                                        type='text'
-                                        name='cabbr'
-                                        value={formData.cabbr}
-                                        onChange={handleChange}
-                                        className='w-full border border-gray-300
-                                        rounded-lg px-4 py-2 focus:outline-none
-                                        focus:ring-2 focus:ring-cyan-500'
-                                    />
-
-                                    {
-                                        formErrors.cabbr && (
-
-                                            <p className='text-red-600 text-sm mt-1'>
-                                                {formErrors.cabbr}
-                                            </p>
-                                        )
-                                    }
-
-                                </div>
-
-                                {/* BUTTONS */}
-
-                                <div className='flex justify-end gap-3'>
-
-                                    <button
-                                        type='button'
-                                        onClick={() => setOpenModal(false)}
-                                        className='px-5 py-2 rounded-lg border
-                                        border-gray-300 hover:bg-gray-100'
-                                    >
-                                        Cancel
-                                    </button>
-
-                                    <button
-                                        type='submit'
-                                        disabled={saving}
-                                        className='bg-cyan-700 hover:bg-cyan-800
-                                        text-white px-5 py-2 rounded-lg
-                                        font-semibold shadow-md'
-                                    >
-                                        {
-                                            saving
-                                                ? 'Saving...'
-                                                : 'Save Company'
-                                        }
-                                    </button>
-
-                                </div>
-
-                            </form>
-
-                        </div>
-
-                    </div>
+            {
+                deleteTarget && (
+                    <DeleteConfirmationModal
+                        company={deleteTarget}
+                        onCancel={() => setDeleteTarget(null)}
+                        onConfirm={deleteCompany}
+                        loading={deleting}
+                        error={deleteError}
+                    />
                 )
             }
 
