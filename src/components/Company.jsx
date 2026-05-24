@@ -1,5 +1,207 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
+
+// =====================================================
+// MODAL COMPONENTS (Outside to prevent re-creation)
+// =====================================================
+
+const CompanyModal = ({
+    title,
+    data,
+    errors,
+    setData,
+    setErrors,
+    onSubmit,
+    onClose,
+    loading,
+    buttonText,
+    handleChange
+}) => (
+    <div
+        className='fixed inset-0 bg-black/40
+        flex justify-center items-center z-50'
+    >
+        <div
+            className='bg-white w-full max-w-md
+            rounded-2xl shadow-2xl p-6'
+        >
+            <div className='flex justify-between mb-5'>
+                <h2
+                    className='text-2xl font-bold
+                    text-cyan-700'
+                >
+                    {title}
+                </h2>
+
+                <button
+                    onClick={onClose}
+                    className='text-xl'
+                >
+                    ✕
+                </button>
+            </div>
+
+            <form onSubmit={onSubmit}>
+                {
+                    errors.apiError && (
+                        <div
+                            className='bg-red-100
+                            text-red-700 p-3 rounded-lg mb-4'
+                        >
+                            {errors.apiError}
+                        </div>
+                    )
+                }
+
+                {
+                    ['cname', 'cabbr'].map(field => (
+                        <div
+                            key={field}
+                            className='mb-4'
+                        >
+                            <label
+                                className='block mb-2
+                                font-semibold'
+                            >
+                                {
+                                    field === 'cname'
+                                        ? 'Company Name'
+                                        : 'Company Abbreviation'
+                                }
+                            </label>
+
+                            <input
+                                type='text'
+                                name={field}
+                                value={data[field]}
+                                onChange={(e) =>
+                                    handleChange(
+                                        e,
+                                        setData,
+                                        errors,
+                                        setErrors
+                                    )
+                                }
+                                className='w-full border
+                                rounded-lg px-4 py-2
+                                focus:ring-2
+                                focus:ring-cyan-500'
+                            />
+
+                            {
+                                errors[field] && (
+                                    <p
+                                        className='text-red-600
+                                        text-sm mt-1'
+                                    >
+                                        {errors[field]}
+                                    </p>
+                                )
+                            }
+                        </div>
+                    ))
+                }
+
+                <div className='flex justify-end gap-3 mt-5'>
+                    <button
+                        type='button'
+                        onClick={onClose}
+                        className='px-5 py-2 border
+                        rounded-lg hover:bg-gray-100'
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type='submit'
+                        disabled={loading}
+                        className='bg-cyan-700
+                        hover:bg-cyan-800
+                        text-white px-5 py-2
+                        rounded-lg'
+                    >
+                        {
+                            loading
+                                ? 'Processing...'
+                                : buttonText
+                        }
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+);
+
+const DeleteConfirmationModal = ({
+    company,
+    onCancel,
+    onConfirm,
+    loading,
+    error
+}) => (
+    <div
+        className='fixed inset-0 bg-black/40
+        flex justify-center items-center z-50'
+    >
+        <div
+            className='bg-white w-full max-w-md
+            rounded-2xl shadow-2xl p-6'
+        >
+            <div className='flex justify-between mb-5'>
+                <h2
+                    className='text-2xl font-bold
+                    text-cyan-700'
+                >
+                    Confirm Deletion
+                </h2>
+
+                <button
+                    onClick={onCancel}
+                    className='text-xl'
+                >
+                    ✕
+                </button>
+            </div>
+
+            <p className='text-gray-700 mb-4'>
+                Are you sure you want to permanently delete
+                the company <strong>{company?.cname}</strong>? This action cannot be undone.
+            </p>
+
+            {error && (
+                <div
+                    className='bg-red-100 text-red-700
+                    p-3 rounded-lg mb-4'
+                >
+                    {error}
+                </div>
+            )}
+
+            <div className='flex justify-end gap-3 mt-5'>
+                <button
+                    type='button'
+                    onClick={onCancel}
+                    className='px-5 py-2 border
+                    rounded-lg hover:bg-gray-100'
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type='button'
+                    onClick={onConfirm}
+                    disabled={loading}
+                    className='bg-red-700
+                    hover:bg-red-800
+                    text-white px-5 py-2
+                    rounded-lg'
+                >
+                    {loading ? 'Deleting...' : 'Delete Company'}
+                </button>
+            </div>
+        </div>
+    </div>
+);
 
 const Company = () => {
 
@@ -429,231 +631,7 @@ const Company = () => {
         }
     };
 
-    // =====================================================
-    // MODAL COMPONENT
-    // =====================================================
 
-    const CompanyModal = ({
-        title,
-        data,
-        errors,
-        setData,
-        setErrors,
-        onSubmit,
-        onClose,
-        loading,
-        buttonText
-    }) => (
-
-        <div
-            className='fixed inset-0 bg-black/40
-            flex justify-center items-center z-50'
-        >
-
-            <div
-                className='bg-white w-full max-w-md
-                rounded-2xl shadow-2xl p-6'
-            >
-
-                <div className='flex justify-between mb-5'>
-
-                    <h2
-                        className='text-2xl font-bold
-                        text-cyan-700'
-                    >
-                        {title}
-                    </h2>
-
-                    <button
-                        onClick={onClose}
-                        className='text-xl'
-                    >
-                        ✕
-                    </button>
-
-                </div>
-
-                <form onSubmit={onSubmit}>
-
-                    {
-                        errors.apiError && (
-
-                            <div
-                                className='bg-red-100
-                                text-red-700 p-3 rounded-lg mb-4'
-                            >
-                                {errors.apiError}
-                            </div>
-                        )
-                    }
-
-                    {
-                        ['cname', 'cabbr'].map(field => (
-
-                            <div
-                                key={field}
-                                className='mb-4'
-                            >
-
-                                <label
-                                    className='block mb-2
-                                    font-semibold'
-                                >
-                                    {
-                                        field === 'cname'
-                                            ? 'Company Name'
-                                            : 'Company Abbreviation'
-                                    }
-                                </label>
-
-                                <input
-                                    type='text'
-                                    name={field}
-                                    value={data[field]}
-                                    onChange={(e) =>
-                                        handleChange(
-                                            e,
-                                            setData,
-                                            errors,
-                                            setErrors
-                                        )
-                                    }
-                                    className='w-full border
-                                    rounded-lg px-4 py-2
-                                    focus:ring-2
-                                    focus:ring-cyan-500'
-                                />
-
-                                {
-                                    errors[field] && (
-
-                                        <p
-                                            className='text-red-600
-                                            text-sm mt-1'
-                                        >
-                                            {errors[field]}
-                                        </p>
-                                    )
-                                }
-
-                            </div>
-                        ))
-                    }
-
-                    <div className='flex justify-end gap-3 mt-5'>
-
-                        <button
-                            type='button'
-                            onClick={onClose}
-                            className='px-5 py-2 border
-                            rounded-lg hover:bg-gray-100'
-                        >
-                            Cancel
-                        </button>
-
-                        <button
-                            type='submit'
-                            disabled={loading}
-                            className='bg-cyan-700
-                            hover:bg-cyan-800
-                            text-white px-5 py-2
-                            rounded-lg'
-                        >
-                            {
-                                loading
-                                    ? 'Processing...'
-                                    : buttonText
-                            }
-                        </button>
-
-                    </div>
-
-                </form>
-
-            </div>
-
-        </div>
-    );
-
-    const DeleteConfirmationModal = ({
-        company,
-        onCancel,
-        onConfirm,
-        loading,
-        error
-    }) => (
-
-        <div
-            className='fixed inset-0 bg-black/40
-            flex justify-center items-center z-50'
-        >
-
-            <div
-                className='bg-white w-full max-w-md
-                rounded-2xl shadow-2xl p-6'
-            >
-
-                <div className='flex justify-between mb-5'>
-
-                    <h2
-                        className='text-2xl font-bold
-                        text-cyan-700'
-                    >
-                        Confirm Deletion
-                    </h2>
-
-                    <button
-                        onClick={onCancel}
-                        className='text-xl'
-                    >
-                        ✕
-                    </button>
-
-                </div>
-
-                <p className='text-gray-700 mb-4'>
-                    Are you sure you want to permanently delete
-                    the company <strong>{company?.cname}</strong>? This action cannot be undone.
-                </p>
-
-                {error && (
-                    <div
-                        className='bg-red-100 text-red-700
-                        p-3 rounded-lg mb-4'
-                    >
-                        {error}
-                    </div>
-                )}
-
-                <div className='flex justify-end gap-3 mt-5'>
-
-                    <button
-                        type='button'
-                        onClick={onCancel}
-                        className='px-5 py-2 border
-                        rounded-lg hover:bg-gray-100'
-                    >
-                        Cancel
-                    </button>
-
-                    <button
-                        type='button'
-                        onClick={onConfirm}
-                        disabled={loading}
-                        className='bg-red-700
-                        hover:bg-red-800
-                        text-white px-5 py-2
-                        rounded-lg'
-                    >
-                        {loading ? 'Deleting...' : 'Delete Company'}
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-    );
 
     // =====================================================
     // LOADING
@@ -1023,6 +1001,7 @@ const Company = () => {
                         }
                         loading={saving}
                         buttonText='Save Company'
+                        handleChange={handleChange}
                     />
                 )
             }
@@ -1044,6 +1023,7 @@ const Company = () => {
                         }
                         loading={editSaving}
                         buttonText='Update Company'
+                        handleChange={handleChange}
                     />
                 )
             }
