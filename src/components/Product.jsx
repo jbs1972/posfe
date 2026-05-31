@@ -71,6 +71,8 @@ const Product = () => {
     const [products,setProducts] = useState([]);
     const [companies,setCompanies] = useState([]);
     const [units,setUnits] = useState([]);
+    const [companyNames,setCompanyNames] = useState({});
+    const [unitNames,setUnitNames] = useState({});
     const [openModal,setOpenModal] = useState(false);
     const [editMode,setEditMode] = useState(false);
     const [errors,setErrors] = useState({});
@@ -91,7 +93,37 @@ const Product = () => {
 
     const fetchProducts = async()=>{
         const res = await api.get('/products/page?page=0&size=10');
-        setProducts(res.data.data.content);
+        const productList = res.data.data.content;
+        setProducts(productList);
+        fetchProductLookupNames(productList);
+    };
+
+    const fetchProductLookupNames = async(productList)=>{
+        const companyIds = [...new Set(productList.map(p => p.companyId).filter(Boolean))];
+        const unitIds = [...new Set(productList.map(p => p.unitId).filter(Boolean))];
+
+        const companyResults = await Promise.all(companyIds.map(async(id)=>{
+            try{
+                const res = await api.get(`/companies/${id}`);
+                const company = res.data.data || res.data;
+                return [id, company.cname || id];
+            }catch{
+                return [id, id];
+            }
+        }));
+
+        const unitResults = await Promise.all(unitIds.map(async(id)=>{
+            try{
+                const res = await api.get(`/units/${id}`);
+                const unit = res.data.data || res.data;
+                return [id, unit.uname || id];
+            }catch{
+                return [id, id];
+            }
+        }));
+
+        setCompanyNames(Object.fromEntries(companyResults));
+        setUnitNames(Object.fromEntries(unitResults));
     };
 
     const fetchCompanies = async()=>{
@@ -183,8 +215,8 @@ const Product = () => {
                                 <td className='p-2'>{p.gst}</td>
                                 <td className='p-2'>{p.unitPrice}</td>
                                 <td className='p-2'>{p.stock}</td>
-                                <td className='p-2'>{p.companyId}</td>
-                                <td className='p-2'>{p.unitId}</td>
+                                <td className='p-2'>{companyNames[p.companyId] || p.companyId}</td>
+                                <td className='p-2'>{unitNames[p.unitId] || p.unitId}</td>
                                 <td className='p-2'>{new Date(p.updatedAt).toLocaleString()}</td>
                                 <td className='p-2 text-center'>
                                     <button onClick={()=>editProduct(p)}>✏️</button>
