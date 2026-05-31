@@ -77,6 +77,8 @@ const Product = () => {
     const [editMode,setEditMode] = useState(false);
     const [errors,setErrors] = useState({});
     const [loading,setLoading] = useState(false);
+    const [totalElements,setTotalElements] = useState(0);
+    const [searchTerm,setSearchTerm] = useState('');
 
     const initialForm = {
         companyId:'',
@@ -95,6 +97,7 @@ const Product = () => {
         const res = await api.get('/products/page?page=0&size=10');
         const productList = res.data.data.content;
         setProducts(productList);
+        setTotalElements(res.data.data.totalElements);
         fetchProductLookupNames(productList);
     };
 
@@ -177,16 +180,48 @@ const Product = () => {
         fetchProducts();
     };
 
+    const filteredProducts = products.filter(product => {
+        if(!searchTerm.trim()) return true;
+
+        const term = searchTerm.toLowerCase();
+        const companyName = companyNames[product.companyId] || product.companyId || '';
+        const unitName = unitNames[product.unitId] || product.unitId || '';
+
+        return (
+            product.pname?.toLowerCase().includes(term) ||
+            String(product.hsn || '').toLowerCase().includes(term) ||
+            String(product.gst || '').toLowerCase().includes(term) ||
+            String(product.unitPrice || '').toLowerCase().includes(term) ||
+            String(product.stock || '').toLowerCase().includes(term) ||
+            String(companyName).toLowerCase().includes(term) ||
+            String(unitName).toLowerCase().includes(term)
+        );
+    });
+
     return (
         <div className='p-4'>
-            <div className='flex justify-between items-center mb-6'>
-                <h1 className='text-2xl font-semibold text-cyan-700'>Product Management</h1>
-                <button
-                    onClick={()=>{setFormData(initialForm);setEditMode(false);setOpenModal(true);}}
-                    className='bg-cyan-700 text-white px-4 py-2 rounded-md'
-                >
-                    + Add Product
-                </button>
+            <div className='flex flex-col md:flex-row justify-between items-center gap-4 mb-6'>
+                <div>
+                    <h1 className='text-2xl font-semibold text-cyan-700'>Product Management</h1>
+                    <p className='text-gray-500 mt-1'>Total Products : {totalElements}</p>
+                </div>
+
+                <div className='flex gap-2'>
+                    <input
+                        type='text'
+                        placeholder='Search product...'
+                        value={searchTerm}
+                        onChange={(e)=>setSearchTerm(e.target.value)}
+                        className='border rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500'
+                    />
+
+                    <button
+                        onClick={()=>{setFormData(initialForm);setEditMode(false);setOpenModal(true);}}
+                        className='bg-cyan-700 text-white px-4 py-2 rounded-md'
+                    >
+                        + Add Product
+                    </button>
+                </div>
             </div>
 
             <div className='overflow-auto max-h-[600px] bg-white border rounded-lg'>
@@ -207,7 +242,7 @@ const Product = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {products.map(p=>(
+                        {filteredProducts.map(p=>(
                             <tr key={p.productId} className='border-b hover:bg-cyan-50'>
                                 <td className='p-2'>{p.productId}</td>
                                 <td className='p-2'>{p.pname}</td>
