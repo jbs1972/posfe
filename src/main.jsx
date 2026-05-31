@@ -16,6 +16,7 @@ import About from './components/About.jsx';
 
 import Master from './components/Master.jsx';
 import Company from './components/Company.jsx';
+import Unit from './components/Unit.jsx';
 import Product from './components/Product.jsx';
 
 import Transaction from './components/Transaction.jsx';
@@ -65,6 +66,10 @@ const appRouter = createBrowserRouter([
                     {
                         path: "company",
                         element: <Company />
+                    },
+                    {
+                        path: "unit",
+                        element: <Unit />
                     },
                     {
                         path: "product",

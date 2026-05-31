@@ -22,12 +22,12 @@ const CompanyModal = ({
         flex justify-center items-center z-50'
     >
         <div
-            className='bg-white w-full max-w-md
-            rounded-2xl shadow-2xl p-6'
+            className='bg-white w-full max-w-sm
+            rounded-lg shadow-lg p-4'
         >
             <div className='flex justify-between mb-5'>
                 <h2
-                    className='text-2xl font-bold
+                    className='text-lg font-semibold
                     text-cyan-700'
                 >
                     {title}
@@ -83,7 +83,7 @@ const CompanyModal = ({
                                     )
                                 }
                                 className='w-full border
-                                rounded-lg px-4 py-2
+                                rounded-md px-3 py-1.5 text-sm
                                 focus:ring-2
                                 focus:ring-cyan-500'
                             />
@@ -106,8 +106,8 @@ const CompanyModal = ({
                     <button
                         type='button'
                         onClick={onClose}
-                        className='px-5 py-2 border
-                        rounded-lg hover:bg-gray-100'
+                        className='px-4 py-1.5 text-sm border
+                        rounded-md hover:bg-gray-100'
                     >
                         Cancel
                     </button>
@@ -117,8 +117,8 @@ const CompanyModal = ({
                         disabled={loading}
                         className='bg-cyan-700
                         hover:bg-cyan-800
-                        text-white px-5 py-2
-                        rounded-lg'
+                        text-white px-4 py-1.5 text-sm
+                        rounded-md'
                     >
                         {
                             loading
@@ -144,12 +144,12 @@ const DeleteConfirmationModal = ({
         flex justify-center items-center z-50'
     >
         <div
-            className='bg-white w-full max-w-md
-            rounded-2xl shadow-2xl p-6'
+            className='bg-white w-full max-w-sm
+            rounded-lg shadow-lg p-4'
         >
             <div className='flex justify-between mb-5'>
                 <h2
-                    className='text-2xl font-bold
+                    className='text-lg font-semibold
                     text-cyan-700'
                 >
                     Confirm Deletion
@@ -227,6 +227,9 @@ const Company = () => {
 
     const [openAddModal, setOpenAddModal] = useState(false);
     const [openEditModal, setOpenEditModal] = useState(false);
+
+    const isFirstPage = currentPage === 0;
+    const isLastPage = currentPage === totalPages - 1;
 
     const [saving, setSaving] = useState(false);
     const [editSaving, setEditSaving] = useState(false);
@@ -333,33 +336,20 @@ const Company = () => {
 
     useEffect(() => {
 
-        fetchCompanies(
-            currentPage,
-            searchTerm,
-            sortField,
-            sortDirection
-        );
+        const delay = searchTerm.trim() ? 400 : 0;
 
-    }, [currentPage, sortField, sortDirection]);
-
-    useEffect(() => {
-
-        const debounce = setTimeout(() => {
-
+        const timer = setTimeout(() => {
             fetchCompanies(
-                0,
+                currentPage,
                 searchTerm,
                 sortField,
                 sortDirection
             );
+        }, delay);
 
-            setCurrentPage(0);
+        return () => clearTimeout(timer);
 
-        }, 400);
-
-        return () => clearTimeout(debounce);
-
-    }, [searchTerm]);
+    }, [currentPage, searchTerm, sortField, sortDirection]);
 
     // =====================================================
     // COMMON FUNCTIONS
@@ -647,7 +637,7 @@ const Company = () => {
             >
 
                 <h1
-                    className='text-2xl font-bold
+                    className='text-lg font-semibold
                     text-cyan-700'
                 >
                     Loading Companies...
@@ -663,7 +653,7 @@ const Company = () => {
 
     return (
 
-        <div className='p-6'>
+        <div className='p-4'>
 
             {/* HEADER */}
 
@@ -675,7 +665,7 @@ const Company = () => {
                 <div>
 
                     <h1
-                        className='text-3xl font-bold
+                        className='text-2xl font-semibold
                         text-cyan-700'
                     >
                         Company Management
@@ -689,15 +679,16 @@ const Company = () => {
 
                 </div>
 
-                <div className='flex gap-3'>
+                <div className='flex gap-2'>
 
                     <input
                         type='text'
                         placeholder='Search company...'
                         value={searchTerm}
-                        onChange={(e) =>
-                            setSearchTerm(e.target.value)
-                        }
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(0);
+                        }}
                         className='border rounded-lg
                         px-4 py-2 focus:ring-2
                         focus:ring-cyan-500'
@@ -709,8 +700,8 @@ const Company = () => {
                         }
                         className='bg-cyan-700
                         hover:bg-cyan-800
-                        text-white px-5 py-2
-                        rounded-lg'
+                        text-white px-4 py-1.5 text-sm
+                        rounded-md'
                     >
                         + Add Company
                     </button>
@@ -723,7 +714,7 @@ const Company = () => {
 
             <div
                 className='overflow-x-auto bg-white
-                rounded-xl shadow-lg border'
+                rounded-lg border border-gray-200'
             >
 
                 <table className='min-w-full text-sm'>
@@ -749,7 +740,7 @@ const Company = () => {
                                         onClick={() =>
                                             handleSort(field)
                                         }
-                                        className='px-6 py-4
+                                        className='px-3 py-2
                                         cursor-pointer'
                                     >
                                         {label}
@@ -759,15 +750,15 @@ const Company = () => {
                                 ))
                             }
 
-                            <th className='px-6 py-4'>
+                            <th className='px-3 py-2'>
                                 Status
                             </th>
 
-                            <th className='px-6 py-4 text-center'>
+                            <th className='px-3 py-2 text-center'>
                                 Edit
                             </th>
 
-                            <th className='px-6 py-4 text-center'>
+                            <th className='px-3 py-2 text-center'>
                                 Delete
                             </th>
 
@@ -788,23 +779,23 @@ const Company = () => {
                                         hover:bg-cyan-50'
                                     >
 
-                                        <td className='px-6 py-4'>
+                                        <td className='px-3 py-2'>
                                             {company.companyId}
                                         </td>
 
                                         <td
-                                            className='px-6 py-4
+                                            className='px-3 py-2
                                             font-semibold'
                                         >
                                             {company.cname}
                                         </td>
 
-                                        <td className='px-6 py-4'>
+                                        <td className='px-3 py-2'>
                                             {company.cabbr}
                                         </td>
 
                                         <td
-                                            className='px-6 py-4
+                                            className='px-3 py-2
                                             text-gray-500'
                                         >
                                             {
@@ -815,7 +806,7 @@ const Company = () => {
                                         </td>
 
                                         <td
-                                            className='px-6 py-4
+                                            className='px-3 py-2
                                             text-gray-500'
                                         >
                                             {
@@ -827,7 +818,7 @@ const Company = () => {
 
                                         {/* STATUS */}
 
-                                        <td className='px-6 py-4'>
+                                        <td className='px-3 py-2'>
 
                                             <button
                                                 onClick={() =>
@@ -842,7 +833,7 @@ const Company = () => {
                                                 }
                                                 className={`
                                                     relative inline-flex
-                                                    h-7 w-14 items-center
+                                                    h-5 w-10 items-center
                                                     rounded-full
 
                                                     ${
@@ -855,13 +846,13 @@ const Company = () => {
 
                                                 <span
                                                     className={`
-                                                        h-5 w-5 bg-white
+                                                        h-4 w-4 bg-white
                                                         rounded-full
                                                         transition-all
 
                                                         ${
                                                             company.active
-                                                                ? 'translate-x-8'
+                                                                ? 'translate-x-5'
                                                                 : 'translate-x-1'
                                                         }
                                                     `}
@@ -874,7 +865,7 @@ const Company = () => {
                                         {/* EDIT */}
 
                                         <td
-                                            className='px-6 py-4
+                                            className='px-3 py-2
                                             text-center'
                                         >
 
@@ -885,7 +876,7 @@ const Company = () => {
                                                 className='bg-blue-100
                                                 hover:bg-blue-200
                                                 text-blue-700
-                                                p-2 rounded-lg'
+                                                p-1.5 rounded-md'
                                             >
                                                 ✏️
                                             </button>
@@ -895,7 +886,7 @@ const Company = () => {
                                         {/* DELETE */}
 
                                         <td
-                                            className='px-6 py-4
+                                            className='px-3 py-2
                                             text-center'
                                         >
 
@@ -906,7 +897,7 @@ const Company = () => {
                                                 className='bg-red-100
                                                 hover:bg-red-200
                                                 text-red-700
-                                                p-2 rounded-lg'
+                                                p-1.5 rounded-md'
                                             >
                                                 🗑️
                                             </button>
@@ -950,10 +941,8 @@ const Company = () => {
                     onClick={() =>
                         setCurrentPage(prev => prev - 1)
                     }
-                    disabled={currentPage === 0}
-                    className='px-5 py-2 rounded-lg
-                    bg-cyan-700 text-white
-                    disabled:bg-gray-300'
+                    disabled={isFirstPage}
+                    className='px-3 py-1.5 text-sm rounded-md bg-cyan-700 text-white disabled:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:filter disabled:blur-sm'
                 >
                     Previous
                 </button>
@@ -972,12 +961,8 @@ const Company = () => {
                     onClick={() =>
                         setCurrentPage(prev => prev + 1)
                     }
-                    disabled={
-                        currentPage === totalPages - 1
-                    }
-                    className='px-5 py-2 rounded-lg
-                    bg-cyan-700 text-white
-                    disabled:bg-gray-300'
+                    disabled={isLastPage}
+                    className='px-3 py-1.5 text-sm rounded-md bg-cyan-700 text-white disabled:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:filter disabled:blur-sm'
                 >
                     Next
                 </button>
