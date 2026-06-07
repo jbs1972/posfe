@@ -18,6 +18,8 @@ import Master from './components/Master.jsx';
 import Company from './components/Company.jsx';
 import Unit from './components/Unit.jsx';
 import Product from './components/Product.jsx';
+import Vendor from './components/Vendor.jsx';
+import FinancialYear from './components/FinancialYear.jsx';
 
 import Transaction from './components/Transaction.jsx';
 import Purchase from './components/Purchase.jsx';
@@ -74,6 +76,14 @@ const appRouter = createBrowserRouter([
                     {
                         path: "product",
                         element: <Product />
+                    },
+                    {
+                        path: "vendor",
+                        element: <Vendor />
+                    },
+                    {
+                        path: "financial-year",
+                        element: <FinancialYear />
                     }
                 ]
             },

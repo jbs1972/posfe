@@ -37,6 +37,18 @@ const Sidebar = () => {
                             </Link>
                         </li>
 
+                        <li className='mb-2 hover:text-blue-600'>
+                            <Link to="/master/vendor">
+                                Vendor
+                            </Link>
+                        </li>
+
+                        <li className='mb-2 hover:text-blue-600'>
+                            <Link to="/master/financial-year">
+                                Financial Year
+                            </Link>
+                        </li>
+
                     </ul>
                 </li>
 
