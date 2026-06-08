@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 
 const EditIcon = () => (
@@ -48,10 +48,11 @@ const VendorModal = ({
     onClose,
     loading,
     buttonText,
-    handleChange
+    handleChange,
+    companies
 }) => (
     <div className='fixed inset-0 bg-black/40 flex justify-center items-center z-50'>
-        <div className='bg-white w-full max-w-sm rounded-lg shadow-lg p-4'>
+        <div className='bg-white w-full max-w-md rounded-lg shadow-lg p-4'>
             <div className='flex justify-between mb-5'>
                 <h2 className='text-lg font-semibold text-cyan-700'>
                     {title}
@@ -97,6 +98,46 @@ const VendorModal = ({
                     {errors.vname && (
                         <p className='text-red-600 text-sm mt-1'>
                             {errors.vname}
+                        </p>
+                    )}
+                </div>
+
+                <div className='mb-4'>
+                    <label className='block mb-2 font-semibold'>
+                        Companies
+                    </label>
+
+                    <select
+                        multiple
+                        name='companyIds'
+                        value={data.companyIds.map(String)}
+                        onChange={(e) =>
+                            handleChange(
+                                e,
+                                setData,
+                                errors,
+                                setErrors
+                            )
+                        }
+                        className='w-full border rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-cyan-500 min-h-28'
+                    >
+                        {companies.map(company => (
+                            <option
+                                key={company.companyId}
+                                value={company.companyId}
+                            >
+                                {company.cname} ({company.cabbr})
+                            </option>
+                        ))}
+                    </select>
+
+                    <p className='text-xs text-gray-500 mt-1'>
+                        Hold Ctrl to choose more than one company.
+                    </p>
+
+                    {errors.companyIds && (
+                        <p className='text-red-600 text-sm mt-1'>
+                            {errors.companyIds}
                         </p>
                     )}
                 </div>
@@ -209,6 +250,7 @@ const Vendor = () => {
     });
 
     const [vendors, setVendors] = useState([]);
+    const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const [currentPage, setCurrentPage] = useState(0);
@@ -241,17 +283,48 @@ const Vendor = () => {
 
     const initialForm = {
         vname: '',
+        companyIds: [],
         active: true
     };
 
     const initialEditForm = {
         vendorId: '',
         vname: '',
+        companyIds: [],
         active: true
     };
 
     const [formData, setFormData] = useState(initialForm);
     const [editFormData, setEditFormData] = useState(initialEditForm);
+
+    const companyMap = useMemo(() => {
+        const map = {};
+
+        companies.forEach(company => {
+            map[company.companyId] = company;
+        });
+
+        return map;
+    }, [companies]);
+
+    const fetchCompanies = async () => {
+        try {
+            const response = await api.get(
+                '/companies/page',
+                {
+                    params: {
+                        page: 0,
+                        size: 1000,
+                        sort: 'cname,asc'
+                    }
+                }
+            );
+
+            setCompanies(response.data.data.content || []);
+        } catch {
+            alert('Failed to fetch companies');
+        }
+    };
 
     const fetchVendors = async (
         page = 0,
@@ -280,6 +353,15 @@ const Vendor = () => {
                     vendor.vname
                         .toLowerCase()
                         .includes(search.toLowerCase())
+
+                    ||
+
+                    (vendor.companyIds || [])
+                        .some(companyId =>
+                            getCompanyName(companyId)
+                                .toLowerCase()
+                                .includes(search.toLowerCase())
+                        )
                 );
             }
 
@@ -293,6 +375,10 @@ const Vendor = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchCompanies();
+    }, []);
 
     useEffect(() => {
         const delay = searchTerm.trim() ? 400 : 0;
@@ -340,6 +426,11 @@ const Vendor = () => {
             errors.vname = 'Maximum 100 characters allowed';
         }
 
+        if (!data.companyIds.length) {
+            errors.companyIds =
+                'Please select at least one company';
+        }
+
         setErrors(errors);
 
         return Object.keys(errors).length === 0;
@@ -351,13 +442,18 @@ const Vendor = () => {
         errors,
         setErrors
     ) => {
-        const { name, value } = e.target;
+        const { name, value, selectedOptions } = e.target;
 
         setter(prev => ({
             ...prev,
             [name]: name === 'active'
                 ? value === 'true'
-                : value
+                : name === 'companyIds'
+                    ? Array.from(
+                        selectedOptions,
+                        option => Number(option.value)
+                    )
+                    : value
         }));
 
         setErrors({
@@ -372,6 +468,14 @@ const Vendor = () => {
         return new Date(dateValue).toLocaleString();
     };
 
+    const getCompanyName = (companyId) => {
+        const company = companyMap[companyId];
+
+        if (!company) return `Company #${companyId}`;
+
+        return `${company.cname} (${company.cabbr})`;
+    };
+
     const saveVendor = async (e) => {
         e.preventDefault();
 
@@ -384,6 +488,7 @@ const Vendor = () => {
 
             await api.post('/vendors', {
                 vname: formData.vname,
+                companyIds: formData.companyIds,
                 active: formData.active
             });
 
@@ -411,6 +516,7 @@ const Vendor = () => {
         setEditFormData({
             vendorId: vendor.vendorId,
             vname: vendor.vname,
+            companyIds: vendor.companyIds || [],
             active: vendor.active
         });
 
@@ -432,6 +538,7 @@ const Vendor = () => {
                 `/vendors/${editFormData.vendorId}`,
                 {
                     vname: editFormData.vname,
+                    companyIds: editFormData.companyIds,
                     active: editFormData.active
                 }
             );
@@ -442,6 +549,7 @@ const Vendor = () => {
                         ? {
                             ...vendor,
                             vname: editFormData.vname,
+                            companyIds: editFormData.companyIds,
                             active: editFormData.active,
                             updatedAt: new Date().toISOString()
                         }
@@ -582,7 +690,27 @@ const Vendor = () => {
                         <tr>
                             {[
                                 ['vendorId', 'ID'],
-                                ['vname', 'Vendor Name'],
+                                ['vname', 'Vendor Name']
+                            ].map(([field, label]) => (
+                                <th
+                                    key={field}
+                                    onClick={() =>
+                                        handleSort(field)
+                                    }
+                                    className='px-3 py-2 cursor-pointer text-left'
+                                >
+                                    {label}{' '}
+                                    <span className='normal-case text-[10px]'>
+                                        {getSortIcon(field)}
+                                    </span>
+                                </th>
+                            ))}
+
+                            <th className='px-3 py-2 text-left'>
+                                Companies
+                            </th>
+
+                            {[
                                 ['createdAt', 'Created At'],
                                 ['updatedAt', 'Updated At']
                             ].map(([field, label]) => (
@@ -627,6 +755,25 @@ const Vendor = () => {
 
                                     <td className='px-3 py-2 font-semibold'>
                                         {vendor.vname}
+                                    </td>
+
+                                    <td className='px-3 py-2'>
+                                        <div className='flex flex-wrap gap-1.5 max-w-xs'>
+                                            {(vendor.companyIds || []).length > 0 ? (
+                                                vendor.companyIds.map(companyId => (
+                                                    <span
+                                                        key={companyId}
+                                                        className='inline-flex items-center rounded-md bg-cyan-50 border border-cyan-200 px-2 py-0.5 text-xs font-medium text-cyan-800'
+                                                    >
+                                                        {getCompanyName(companyId)}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <span className='text-gray-400'>
+                                                    No Company
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
 
                                     <td className='px-3 py-2 text-gray-500'>
@@ -707,7 +854,7 @@ const Vendor = () => {
                         ) : (
                             <tr>
                                 <td
-                                    colSpan='7'
+                                    colSpan='8'
                                     className='text-center py-6 text-gray-500'
                                 >
                                     No Vendors Found
@@ -758,6 +905,7 @@ const Vendor = () => {
                     loading={saving}
                     buttonText='Save Vendor'
                     handleChange={handleChange}
+                    companies={companies}
                 />
             )}
 
@@ -775,6 +923,7 @@ const Vendor = () => {
                     loading={editSaving}
                     buttonText='Update Vendor'
                     handleChange={handleChange}
+                    companies={companies}
                 />
             )}
 
