@@ -1,0 +1,631 @@
+In my POS application frontend - going to implement Purchase section that has the following API endpoints:
+
+1. Create Purchase
+POST - http://localhost:8080/api/purchases
+Input JSON:
+{
+    "vendorId": 2,
+    "companyId": 3,
+    "invoiceNo": "PUR-2026-0001",
+    "invoiceDate": "2026-06-14",
+    "netItemCount": 2,
+    "netGross": 2500.00,
+    "netDiscount": 100.00,
+    "taxableAmount": 2400.00,
+    "netGstAmount": 432.00,
+    "netPayableAmount": 2832.00,
+    "finalAmount": 2832.00,
+    "items": [
+        {
+            "productId": 1,
+            "mrp": 100.00,
+            "totalQty": 10,
+            "grossAmount": 1000.00,
+            "discountPer": 5.00,
+            "discountAmount": 50.00,
+            "taxableAmount": 950.00,
+            "gstAmount": 171.00,
+            "payableAmount": 1121.00
+        },
+        {
+            "productId": 2,
+            "mrp": 150.00,
+            "totalQty": 10,
+            "grossAmount": 1500.00,
+            "discountPer": 3.33,
+            "discountAmount": 50.00,
+            "taxableAmount": 1450.00,
+            "gstAmount": 261.00,
+            "payableAmount": 1711.00
+        }
+    ]
+}
+Output JSON:
+{
+    "status": 201,
+    "message": "Purchase created successfully",
+    "data": {
+        "pmId": 1,
+        "vendorId": 2,
+        "vendorName": "Vendor 02",
+        "companyId": 3,
+        "companyName": "Company 03",
+        "invoiceNo": "PUR-2026-0001",
+        "invoiceDate": "2026-06-14",
+        "netItemCount": 2,
+        "netGross": 2500,
+        "netDiscount": 100,
+        "taxableAmount": 2400,
+        "netGstAmount": 432,
+        "netPayableAmount": 2832,
+        "finalAmount": 2832,
+        "active": true,
+        "items": [
+            {
+                "psId": 1,
+                "productId": 1,
+                "productName": "Product 01",
+                "mrp": 100,
+                "totalQty": 10,
+                "grossAmount": 1000,
+                "discountPer": 5,
+                "discountAmount": 50,
+                "taxableAmount": 950,
+                "gstAmount": 171,
+                "payableAmount": 1121,
+                "soldQty": 0
+            },
+            {
+                "psId": 2,
+                "productId": 2,
+                "productName": "Product 02",
+                "mrp": 150,
+                "totalQty": 10,
+                "grossAmount": 1500,
+                "discountPer": 3.33,
+                "discountAmount": 50,
+                "taxableAmount": 1450,
+                "gstAmount": 261,
+                "payableAmount": 1711,
+                "soldQty": 0
+            }
+        ],
+        "createdAt": "2026-06-14T16:01:19.633188",
+        "updatedAt": "2026-06-14T16:01:19.633188"
+    },
+    "timestamp": "2026-06-14T16:01:19.7651669"
+}
+
+2. Get Purchase by pagination
+GET - http://localhost:8080/api/purchases/page?page=0&size=10
+Output JSON:
+{
+    "status": 200,
+    "message": "Purchases retrieved successfully",
+    "data": {
+        "content": [
+            {
+                "pmId": 1,
+                "vendorId": 2,
+                "vendorName": "Vendor 02",
+                "companyId": 3,
+                "companyName": "Company 03",
+                "invoiceNo": "PUR-2026-0001",
+                "invoiceDate": "2026-06-14",
+                "netItemCount": 2,
+                "netGross": 2500,
+                "netDiscount": 100,
+                "taxableAmount": 2400,
+                "netGstAmount": 432,
+                "netPayableAmount": 2832,
+                "finalAmount": 2832,
+                "active": true,
+                "items": [
+                    {
+                        "psId": 1,
+                        "productId": 1,
+                        "productName": "Product 01",
+                        "mrp": 100,
+                        "totalQty": 10,
+                        "grossAmount": 1000,
+                        "discountPer": 5,
+                        "discountAmount": 50,
+                        "taxableAmount": 950,
+                        "gstAmount": 171,
+                        "payableAmount": 1121,
+                        "soldQty": 0
+                    },
+                    {
+                        "psId": 2,
+                        "productId": 2,
+                        "productName": "Product 02",
+                        "mrp": 150,
+                        "totalQty": 10,
+                        "grossAmount": 1500,
+                        "discountPer": 3.33,
+                        "discountAmount": 50,
+                        "taxableAmount": 1450,
+                        "gstAmount": 261,
+                        "payableAmount": 1711,
+                        "soldQty": 0
+                    }
+                ],
+                "createdAt": "2026-06-14T16:01:19.633188",
+                "updatedAt": "2026-06-14T16:01:19.633188"
+            }
+        ],
+        "pageable": {
+            "pageNumber": 0,
+            "pageSize": 10,
+            "sort": {
+                "empty": true,
+                "sorted": false,
+                "unsorted": true
+            },
+            "offset": 0,
+            "unpaged": false,
+            "paged": true
+        },
+        "last": true,
+        "totalElements": 1,
+        "totalPages": 1,
+        "size": 10,
+        "number": 0,
+        "sort": {
+            "empty": true,
+            "sorted": false,
+            "unsorted": true
+        },
+        "numberOfElements": 1,
+        "first": true,
+        "empty": false
+    },
+    "timestamp": "2026-06-14T16:05:01.7556453"
+}
+
+3. Get purchase by ID
+GET - http://localhost:8080/api/purchases/1
+Output JSON:
+{
+    "status": 200,
+    "message": "Purchase retrieved successfully",
+    "data": {
+        "pmId": 1,
+        "vendorId": 2,
+        "vendorName": "Vendor 02",
+        "companyId": 3,
+        "companyName": "Company 03",
+        "invoiceNo": "PUR-2026-0001",
+        "invoiceDate": "2026-06-14",
+        "netItemCount": 2,
+        "netGross": 2500,
+        "netDiscount": 100,
+        "taxableAmount": 2400,
+        "netGstAmount": 432,
+        "netPayableAmount": 2832,
+        "finalAmount": 2832,
+        "active": true,
+        "items": [
+            {
+                "psId": 1,
+                "productId": 1,
+                "productName": "Product 01",
+                "mrp": 100,
+                "totalQty": 10,
+                "grossAmount": 1000,
+                "discountPer": 5,
+                "discountAmount": 50,
+                "taxableAmount": 950,
+                "gstAmount": 171,
+                "payableAmount": 1121,
+                "soldQty": 0
+            },
+            {
+                "psId": 2,
+                "productId": 2,
+                "productName": "Product 02",
+                "mrp": 150,
+                "totalQty": 10,
+                "grossAmount": 1500,
+                "discountPer": 3.33,
+                "discountAmount": 50,
+                "taxableAmount": 1450,
+                "gstAmount": 261,
+                "payableAmount": 1711,
+                "soldQty": 0
+            }
+        ],
+        "createdAt": "2026-06-14T16:01:19.633188",
+        "updatedAt": "2026-06-14T16:01:19.633188"
+    },
+    "timestamp": "2026-06-14T16:07:39.5193061"
+}
+
+4. Get purchases by Vendor
+GET - http://localhost:8080/api/purchases/vendor/2?page=0&size=10
+Output JSON:
+{
+    "status": 200,
+    "message": "Vendor purchases retrieved successfully",
+    "data": {
+        "content": [
+            {
+                "pmId": 1,
+                "vendorId": 2,
+                "vendorName": "Vendor 02",
+                "companyId": 3,
+                "companyName": "Company 03",
+                "invoiceNo": "PUR-2026-0001",
+                "invoiceDate": "2026-06-14",
+                "netItemCount": 2,
+                "netGross": 2500,
+                "netDiscount": 100,
+                "taxableAmount": 2400,
+                "netGstAmount": 432,
+                "netPayableAmount": 2832,
+                "finalAmount": 2832,
+                "active": true,
+                "items": [
+                    {
+                        "psId": 1,
+                        "productId": 1,
+                        "productName": "Product 01",
+                        "mrp": 100,
+                        "totalQty": 10,
+                        "grossAmount": 1000,
+                        "discountPer": 5,
+                        "discountAmount": 50,
+                        "taxableAmount": 950,
+                        "gstAmount": 171,
+                        "payableAmount": 1121,
+                        "soldQty": 0
+                    },
+                    {
+                        "psId": 2,
+                        "productId": 2,
+                        "productName": "Product 02",
+                        "mrp": 150,
+                        "totalQty": 10,
+                        "grossAmount": 1500,
+                        "discountPer": 3.33,
+                        "discountAmount": 50,
+                        "taxableAmount": 1450,
+                        "gstAmount": 261,
+                        "payableAmount": 1711,
+                        "soldQty": 0
+                    }
+                ],
+                "createdAt": "2026-06-14T16:01:19.633188",
+                "updatedAt": "2026-06-14T16:01:19.633188"
+            }
+        ],
+        "pageable": {
+            "pageNumber": 0,
+            "pageSize": 10,
+            "sort": {
+                "empty": true,
+                "sorted": false,
+                "unsorted": true
+            },
+            "offset": 0,
+            "unpaged": false,
+            "paged": true
+        },
+        "last": true,
+        "totalElements": 1,
+        "totalPages": 1,
+        "size": 10,
+        "number": 0,
+        "sort": {
+            "empty": true,
+            "sorted": false,
+            "unsorted": true
+        },
+        "numberOfElements": 1,
+        "first": true,
+        "empty": false
+    },
+    "timestamp": "2026-06-14T16:10:10.1786583"
+}
+
+5. Get purchases by Company
+GET - http://localhost:8080/api/purchases/company/3?page=0&size=10
+Output JSON:
+{
+    "status": 200,
+    "message": "Company purchases retrieved successfully",
+    "data": {
+        "content": [
+            {
+                "pmId": 1,
+                "vendorId": 2,
+                "vendorName": "Vendor 02",
+                "companyId": 3,
+                "companyName": "Company 03",
+                "invoiceNo": "PUR-2026-0001",
+                "invoiceDate": "2026-06-14",
+                "netItemCount": 2,
+                "netGross": 2500,
+                "netDiscount": 100,
+                "taxableAmount": 2400,
+                "netGstAmount": 432,
+                "netPayableAmount": 2832,
+                "finalAmount": 2832,
+                "active": true,
+                "items": [
+                    {
+                        "psId": 1,
+                        "productId": 1,
+                        "productName": "Product 01",
+                        "mrp": 100,
+                        "totalQty": 10,
+                        "grossAmount": 1000,
+                        "discountPer": 5,
+                        "discountAmount": 50,
+                        "taxableAmount": 950,
+                        "gstAmount": 171,
+                        "payableAmount": 1121,
+                        "soldQty": 0
+                    },
+                    {
+                        "psId": 2,
+                        "productId": 2,
+                        "productName": "Product 02",
+                        "mrp": 150,
+                        "totalQty": 10,
+                        "grossAmount": 1500,
+                        "discountPer": 3.33,
+                        "discountAmount": 50,
+                        "taxableAmount": 1450,
+                        "gstAmount": 261,
+                        "payableAmount": 1711,
+                        "soldQty": 0
+                    }
+                ],
+                "createdAt": "2026-06-14T16:01:19.633188",
+                "updatedAt": "2026-06-14T16:01:19.633188"
+            }
+        ],
+        "pageable": {
+            "pageNumber": 0,
+            "pageSize": 10,
+            "sort": {
+                "empty": true,
+                "sorted": false,
+                "unsorted": true
+            },
+            "offset": 0,
+            "unpaged": false,
+            "paged": true
+        },
+        "last": true,
+        "totalElements": 1,
+        "totalPages": 1,
+        "size": 10,
+        "number": 0,
+        "sort": {
+            "empty": true,
+            "sorted": false,
+            "unsorted": true
+        },
+        "numberOfElements": 1,
+        "first": true,
+        "empty": false
+    },
+    "timestamp": "2026-06-14T16:17:09.7812651"
+}
+
+6. Delete purchase by ID
+DELETE: http://localhost:8080/api/purchases/1
+Output:
+204 No Content
+
+Purchase is divided into 2 parts: PurchaseMaster(master data) and PurchaseSub(product information)
+Here is mu Java Spring Boot entity:
+package com.jbs.posbe.entity;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "purchase_master")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SQLDelete(sql = "UPDATE purchase_master SET deleted = true WHERE pm_id = ?")
+@SQLRestriction("deleted = false")
+public class PurchaseMaster {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "pm_id")
+    private Long pmId;
+
+    /*
+     * Many PurchaseMaster -> One Vendor
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private Vendor vendor;
+
+    /*
+     * Many PurchaseMaster -> One Company
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
+
+    @Column(nullable = false)
+    private String invoiceNo;
+
+    @Column(nullable = false)
+    private LocalDate invoiceDate;
+
+    private Integer netItemCount;
+
+    private Double netGross;
+
+    private Double netDiscount;
+
+    private Double taxableAmount;
+
+    private Double netGstAmount;
+
+    private Double netPayableAmount;
+
+    private Double finalAmount;
+
+    @Column(nullable = false,
+            columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean deleted;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+    /*
+     * One PurchaseMaster -> Many PurchaseSub
+     */
+    @OneToMany(
+            mappedBy = "purchaseMaster",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    @JsonIgnore
+    private List<PurchaseSub> purchaseItems;
+}
+
+package com.jbs.posbe.entity;
+
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.*;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "purchase_sub")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class PurchaseSub {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ps_id")
+    private Long psId;
+
+    /*
+     * Many PurchaseSub -> One PurchaseMaster
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pm_id", nullable = false)
+    @JsonIgnore
+    private PurchaseMaster purchaseMaster;
+
+    /*
+     * Many PurchaseSub -> One Product
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    private Double mrp;
+
+    private Integer totalQty;
+
+    private Double grossAmount;
+
+    private Double discountPer;
+
+    private Double discountAmount;
+
+    private Double taxableAmount;
+
+    private Double gstAmount;
+
+    private Double payableAmount;
+
+    private Integer soldQty = 0;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+}
+
+Provide the code for Purchase.jsx according to the following requirements:
+
+2. Use tailwindcss
+3. Show the unit data in tabular form.
+4. Table should have one extra action columns Delete with icon interface.
+5. Must have a heading over the table and a right button to "Add Purchase" using a modal for unit input. after save on the modal the parent table will be updated accordingly.
+6. On clicking the delete on a particular row ask for confirmation before final delete. and reflects on the parent table.
+7. Table will show 10 records and add a scrollbar automatically to scroll more records.
+8. Use professional look and not any bigger size on display - use modarate size
+9. Do everything on the same component "Purchase.jsx"
+10. There will be details button using eye icon which when clicked display all product details on the purchase.
+11. For a purchase company will be selected according to the selected vendor.
+12. Product should be displayed according to the selection of the company.
+13. Organize add purchase according to the visibility range in professional way.
+
+My existing Purchsse.jsx
+
+import React from 'react';
+
+const Purchase = () => {
+    return (
+        <div>
+            <h1 className='text-3xl font-bold text-blue-700'>
+                Purchase Page
+            </h1>
+        </div>
+    );
+};
+
+export default Purchase;
+
+located at: C:\Users\senjb\students\react\camelia\posfe\src\components
