@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext.jsx';
 
 // =====================================================
 // MODAL COMPONENTS (Outside to prevent re-creation)
@@ -204,9 +205,11 @@ const DeleteConfirmationModal = ({
 );
 
 const Company = () => {
+    const { token } = useAuth();
 
     const api = axios.create({
-        baseURL: 'http://localhost:8080/api'
+        baseURL: 'http://localhost:8080/api',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
     });
 
     // =====================================================

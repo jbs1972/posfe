@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from './context/AuthContext.jsx';
 
 const Sidebar = () => {
+    const { userRole } = useAuth();
+
     return (
         <div className='w-60 min-h-screen bg-slate-100 border-r border-gray-300 shadow-md'>
 
@@ -18,6 +21,14 @@ const Sidebar = () => {
 
                     {/* Submenus */}
                     <ul className='ml-4 mt-2 text-base font-medium text-slate-600'>
+
+                        {userRole === 'ROLE_ADMIN' && (
+                            <li className='mb-2 hover:text-blue-600'>
+                                <Link to="/master/user">
+                                    User
+                                </Link>
+                            </li>
+                        )}
 
                         <li className='mb-2 hover:text-blue-600'>
                             <Link to="/master/company">

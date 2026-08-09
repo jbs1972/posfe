@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const EditIcon = () => (
     <svg
@@ -245,13 +246,20 @@ const DeleteConfirmationModal = ({
 );
 
 const Vendor = () => {
+    const { token } = useAuth();
     const api = axios.create({
-        baseURL: 'http://localhost:8080/api'
+        baseURL: 'http://localhost:8080/api',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
     });
 
     const [vendors, setVendors] = useState([]);
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    const activeCompanies = useMemo(
+        () => companies.filter(company => company.active === true),
+        [companies]
+    );
 
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
@@ -759,15 +767,20 @@ const Vendor = () => {
 
                                     <td className='px-3 py-2'>
                                         <div className='flex flex-wrap gap-1.5 max-w-xs'>
-                                            {(vendor.companyIds || []).length > 0 ? (
-                                                vendor.companyIds.map(companyId => (
-                                                    <span
-                                                        key={companyId}
-                                                        className='inline-flex items-center rounded-md bg-cyan-50 border border-cyan-200 px-2 py-0.5 text-xs font-medium text-cyan-800'
-                                                    >
-                                                        {getCompanyName(companyId)}
-                                                    </span>
-                                                ))
+                                            {(vendor.companyIds || []).some(companyId => {
+                                                const company = companyMap[companyId];
+                                                return company?.active === true;
+                                            }) ? (
+                                                (vendor.companyIds || [])
+                                                    .filter(companyId => companyMap[companyId]?.active === true)
+                                                    .map(companyId => (
+                                                        <span
+                                                            key={companyId}
+                                                            className='inline-flex items-center rounded-md bg-cyan-50 border border-cyan-200 px-2 py-0.5 text-xs font-medium text-cyan-800'
+                                                        >
+                                                            {getCompanyName(companyId)}
+                                                        </span>
+                                                    ))
                                             ) : (
                                                 <span className='text-gray-400'>
                                                     No Company
@@ -905,7 +918,7 @@ const Vendor = () => {
                     loading={saving}
                     buttonText='Save Vendor'
                     handleChange={handleChange}
-                    companies={companies}
+                    companies={activeCompanies}
                 />
             )}
 
@@ -923,7 +936,7 @@ const Vendor = () => {
                     loading={editSaving}
                     buttonText='Update Vendor'
                     handleChange={handleChange}
-                    companies={companies}
+                    companies={activeCompanies}
                 />
             )}
 

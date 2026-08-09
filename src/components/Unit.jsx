@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const UnitModal = ({
     title, data, errors, onSubmit, onClose, loading, buttonText, handleChange
@@ -55,7 +56,11 @@ const DeleteConfirmationModal = ({ unit, onCancel, onConfirm, loading, error }) 
 );
 
 const Unit = () => {
-    const api = axios.create({ baseURL: 'http://localhost:8080/api' });
+    const { token } = useAuth();
+    const api = axios.create({
+        baseURL: 'http://localhost:8080/api',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+    });
 
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(false);
