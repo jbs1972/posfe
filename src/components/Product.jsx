@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const ProductModal = ({
     title,
@@ -66,7 +67,11 @@ const ProductModal = ({
 );
 
 const Product = () => {
-    const api = axios.create({ baseURL: 'http://localhost:8080/api' });
+    const { token } = useAuth();
+    const api = axios.create({
+        baseURL: 'http://localhost:8080/api',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+    });
 
     const [products,setProducts] = useState([]);
     const [companies,setCompanies] = useState([]);

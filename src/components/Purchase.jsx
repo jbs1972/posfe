@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext.jsx';
 
-const api = axios.create({ baseURL: 'http://localhost:8080/api' });
 const pageSize = 10;
 
 const EyeIcon = () => (
@@ -51,6 +51,8 @@ const money = value =>
 const num = value => Number(value || 0);
 
 const PurchaseModal = ({
+    title,
+    buttonText,
     formData,
     setFormData,
     vendors,
@@ -61,19 +63,56 @@ const PurchaseModal = ({
     onClose,
     onSubmit
 }) => {
-    const selectedVendor = vendors.find(v => Number(v.vendorId) === Number(formData.vendorId));
+    const safeVendors = Array.isArray(vendors) ? vendors : [];
+    const safeCompanies = Array.isArray(companies) ? companies : [];
+    const safeProducts = Array.isArray(products) ? products : [];
 
-    const allowedCompanyIds = selectedVendor?.companyIds?.length
+    const activeVendors = useMemo(
+        () => safeVendors.filter(vendor => vendor.active === true),
+        [safeVendors]
+    );
+
+    const activeCompanies = useMemo(
+        () => safeCompanies.filter(company => company.active === true),
+        [safeCompanies]
+    );
+
+    const selectedVendor = activeVendors.find(v => Number(v.vendorId) === Number(formData.vendorId));
+
+    const allowedCompanyIds = Array.isArray(selectedVendor?.companyIds)
         ? selectedVendor.companyIds.map(Number)
         : [];
 
     const availableCompanies = allowedCompanyIds.length
-        ? companies.filter(c => allowedCompanyIds.includes(Number(c.companyId)))
-        : companies;
+        ? activeCompanies.filter(c => allowedCompanyIds.includes(Number(c.companyId)))
+        : activeCompanies;
 
-    const availableProducts = products.filter(
+    const availableProducts = safeProducts.filter(
         product => Number(product.companyId) === Number(formData.companyId)
     );
+
+    useEffect(() => {
+        if (formData.vendorId && !selectedVendor) {
+            setFormData(prev => ({
+                ...prev,
+                vendorId: '',
+                companyId: '',
+                items: [{ ...emptyItem }]
+            }));
+            return;
+        }
+
+        if (
+            formData.companyId &&
+            !availableCompanies.some(company => String(company.companyId) === String(formData.companyId))
+        ) {
+            setFormData(prev => ({
+                ...prev,
+                companyId: '',
+                items: [{ ...emptyItem }]
+            }));
+        }
+    }, [formData.vendorId, formData.companyId, selectedVendor, availableCompanies, setFormData]);
 
     const updateForm = (name, value) => {
         setFormData(prev => ({
@@ -161,7 +200,7 @@ const PurchaseModal = ({
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3'>
             <div className='w-full max-w-6xl max-h-[92vh] overflow-y-auto rounded-lg bg-white shadow-lg'>
                 <div className='sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3'>
-                    <h2 className='text-lg font-semibold text-cyan-700'>Add Purchase</h2>
+                    <h2 className='text-lg font-semibold text-cyan-700'>{title}</h2>
                     <button type='button' onClick={onClose} className='text-xl leading-none'>x</button>
                 </div>
 
@@ -181,7 +220,7 @@ const PurchaseModal = ({
                                 className='w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500'
                             >
                                 <option value=''>Select Vendor</option>
-                                {vendors.map(vendor => (
+                                {activeVendors.map(vendor => (
                                     <option key={vendor.vendorId} value={vendor.vendorId}>
                                         {vendor.vname || vendor.vendorName}
                                     </option>
@@ -318,7 +357,7 @@ const PurchaseModal = ({
                             Cancel
                         </button>
                         <button type='submit' disabled={saving} className='rounded-md bg-cyan-700 px-4 py-1.5 text-sm text-white hover:bg-cyan-800 disabled:opacity-60'>
-                            {saving ? 'Saving...' : 'Save Purchase'}
+                            {saving ? 'Saving...' : buttonText}
                         </button>
                     </div>
                 </form>
@@ -328,10 +367,26 @@ const PurchaseModal = ({
 };
 
 const Purchase = () => {
+    const { token } = useAuth();
+    const api = axios.create({
+        baseURL: 'http://localhost:8080/api',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+    });
+
     const [purchases, setPurchases] = useState([]);
     const [vendors, setVendors] = useState([]);
     const [companies, setCompanies] = useState([]);
     const [products, setProducts] = useState([]);
+
+    const activeVendors = useMemo(
+        () => vendors.filter(vendor => vendor.active === true),
+        [vendors]
+    );
+
+    const activeCompanies = useMemo(
+        () => companies.filter(company => company.active === true),
+        [companies]
+    );
 
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -342,6 +397,8 @@ const Purchase = () => {
     const [totalElements, setTotalElements] = useState(0);
 
     const [openAddModal, setOpenAddModal] = useState(false);
+    const [openEditModal, setOpenEditModal] = useState(false);
+    const [editingPurchase, setEditingPurchase] = useState(null);
     const [detailPurchase, setDetailPurchase] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -356,6 +413,14 @@ const Purchase = () => {
     };
 
     const [formData, setFormData] = useState(initialForm);
+
+    React.useEffect(() => {
+        setFormData(initialForm);
+        setOpenAddModal(false);
+        setErrors({});
+        setDeleteTarget(null);
+        setDetailPurchase(null);
+    }, []);
 
     const fetchPurchases = async (page = 0) => {
         try {
@@ -465,6 +530,93 @@ const Purchase = () => {
         }
     };
 
+    const closeModal = () => {
+        setOpenAddModal(false);
+        setOpenEditModal(false);
+        setEditingPurchase(null);
+        setFormData(initialForm);
+        setErrors({});
+    };
+
+    const handleEditClick = (purchase) => {
+        setFormData({
+            pmId: purchase.pmId,
+            vendorId: String(purchase.vendorId || ''),
+            companyId: String(purchase.companyId || ''),
+            invoiceNo: purchase.invoiceNo || '',
+            invoiceDate: purchase.invoiceDate || today,
+            items: Array.isArray(purchase.items) && purchase.items.length > 0
+                ? purchase.items.map(item => ({
+                    productId: String(item.productId || ''),
+                    mrp: item.mrp ?? '',
+                    totalQty: item.totalQty ?? '',
+                    discountPer: item.discountPer ?? '',
+                    grossAmount: item.grossAmount ?? 0,
+                    discountAmount: item.discountAmount ?? 0,
+                    taxableAmount: item.taxableAmount ?? 0,
+                    gstAmount: item.gstAmount ?? 0,
+                    payableAmount: item.payableAmount ?? 0
+                }))
+                : [{ ...emptyItem }]
+        });
+        setEditingPurchase(purchase);
+        setErrors({});
+        setOpenEditModal(true);
+    };
+
+    const updatePurchase = async (e) => {
+        e.preventDefault();
+
+        if (!validate()) return;
+
+        const validItems = formData.items.filter(item => item.productId);
+
+        const totals = {
+            netItemCount: validItems.length,
+            netGross: validItems.reduce((sum, item) => sum + num(item.grossAmount), 0),
+            netDiscount: validItems.reduce((sum, item) => sum + num(item.discountAmount), 0),
+            taxableAmount: validItems.reduce((sum, item) => sum + num(item.taxableAmount), 0),
+            netGstAmount: validItems.reduce((sum, item) => sum + num(item.gstAmount), 0),
+            netPayableAmount: validItems.reduce((sum, item) => sum + num(item.payableAmount), 0)
+        };
+
+        const payload = {
+            vendorId: Number(formData.vendorId),
+            companyId: Number(formData.companyId),
+            invoiceNo: formData.invoiceNo.trim(),
+            invoiceDate: formData.invoiceDate,
+            ...totals,
+            finalAmount: totals.netPayableAmount,
+            items: validItems.map(item => ({
+                productId: Number(item.productId),
+                mrp: num(item.mrp),
+                totalQty: num(item.totalQty),
+                grossAmount: num(item.grossAmount),
+                discountPer: num(item.discountPer),
+                discountAmount: num(item.discountAmount),
+                taxableAmount: num(item.taxableAmount),
+                gstAmount: num(item.gstAmount),
+                payableAmount: num(item.payableAmount)
+            }))
+        };
+
+        try {
+            setSaving(true);
+            await api.patch(`/purchases/${formData.pmId}`, payload);
+            setOpenEditModal(false);
+            setEditingPurchase(null);
+            setFormData(initialForm);
+            setErrors({});
+            fetchPurchases(currentPage);
+        } catch (err) {
+            setErrors({
+                apiError: err.response?.data?.message || 'Unable to update purchase'
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const confirmDelete = async () => {
         if (!deleteTarget) return;
 
@@ -508,11 +660,13 @@ const Purchase = () => {
                             <th className='px-3 py-2 text-left'>Date</th>
                             <th className='px-3 py-2 text-left'>Vendor</th>
                             <th className='px-3 py-2 text-left'>Company</th>
+                            <th className='px-3 py-2 text-left'>Status</th>
                             <th className='px-3 py-2 text-right'>Items</th>
                             <th className='px-3 py-2 text-right'>Gross</th>
                             <th className='px-3 py-2 text-right'>GST</th>
                             <th className='px-3 py-2 text-right'>Final</th>
-                            <th className='px-3 py-2 text-center'>Details</th>
+                            <th className='px-3 py-2 text-center'>Edit</th>
+                            <th className='px-3 py-2 text-center'>View</th>
                             <th className='px-3 py-2 text-center'>Delete</th>
                         </tr>
                     </thead>
@@ -520,7 +674,7 @@ const Purchase = () => {
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan='11' className='py-8 text-center text-gray-500'>Loading purchases...</td>
+                                <td colSpan='13' className='py-8 text-center text-gray-500'>Loading purchases...</td>
                             </tr>
                         ) : purchases.length ? (
                             purchases.map(purchase => (
@@ -530,25 +684,50 @@ const Purchase = () => {
                                     <td className='px-3 py-2'>{purchase.invoiceDate}</td>
                                     <td className='px-3 py-2'>{purchase.vendorName}</td>
                                     <td className='px-3 py-2'>{purchase.companyName}</td>
+                                    <td className='px-3 py-2'>
+                                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${purchase.active ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'}`}>
+                                            {purchase.active ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
                                     <td className='px-3 py-2 text-right'>{purchase.netItemCount}</td>
                                     <td className='px-3 py-2 text-right'>{money(purchase.netGross)}</td>
                                     <td className='px-3 py-2 text-right'>{money(purchase.netGstAmount)}</td>
                                     <td className='px-3 py-2 text-right font-semibold'>{money(purchase.finalAmount)}</td>
                                     <td className='px-3 py-2 text-center'>
-                                        <button onClick={() => setDetailPurchase(purchase)} className='inline-flex rounded-md bg-blue-100 p-1.5 text-blue-700 hover:bg-blue-200'>
+                                        <button
+                                            type='button'
+                                            onClick={() => handleEditClick(purchase)}
+                                            className='bg-blue-100 hover:bg-blue-200 text-blue-700 p-1.5 rounded-md'
+                                            aria-label='Edit purchase'
+                                        >
+                                            ✏️
+                                        </button>
+                                    </td>
+                                    <td className='px-3 py-2 text-center'>
+                                        <button
+                                            type='button'
+                                            onClick={() => setDetailPurchase(purchase)}
+                                            className='bg-slate-100 hover:bg-slate-200 text-slate-700 p-1.5 rounded-md'
+                                            aria-label='View purchase details'
+                                        >
                                             <EyeIcon />
                                         </button>
                                     </td>
                                     <td className='px-3 py-2 text-center'>
-                                        <button onClick={() => setDeleteTarget(purchase)} className='inline-flex rounded-md bg-red-100 p-1.5 text-red-700 hover:bg-red-200'>
-                                            <DeleteIcon />
+                                        <button
+                                            type='button'
+                                            onClick={() => setDeleteTarget(purchase)}
+                                            className='bg-red-100 hover:bg-red-200 text-red-700 p-1.5 rounded-md'
+                                            aria-label='Delete purchase'
+                                        >
+                                            🗑️
                                         </button>
                                     </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan='11' className='py-8 text-center text-gray-500'>No purchases found</td>
+                                <td colSpan='13' className='py-8 text-center text-gray-500'>No purchases found</td>
                             </tr>
                         )}
                     </tbody>
@@ -579,6 +758,8 @@ const Purchase = () => {
 
             {openAddModal && (
                 <PurchaseModal
+                    title='Add Purchase'
+                    buttonText='Save Purchase'
                     formData={formData}
                     setFormData={setFormData}
                     vendors={vendors}
@@ -586,8 +767,23 @@ const Purchase = () => {
                     products={products}
                     errors={errors}
                     saving={saving}
-                    onClose={() => setOpenAddModal(false)}
+                    onClose={closeModal}
                     onSubmit={savePurchase}
+                />
+            )}
+            {openEditModal && (
+                <PurchaseModal
+                    title='Edit Purchase'
+                    buttonText='Update Purchase'
+                    formData={formData}
+                    setFormData={setFormData}
+                    vendors={vendors}
+                    companies={companies}
+                    products={products}
+                    errors={errors}
+                    saving={saving}
+                    onClose={closeModal}
+                    onSubmit={updatePurchase}
                 />
             )}
 

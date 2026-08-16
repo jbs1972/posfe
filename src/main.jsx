@@ -5,8 +5,9 @@ import './index.css';
 import {
     createBrowserRouter,
     RouterProvider,
-    Outlet
-} from "react-router-dom";
+    Outlet,
+    Navigate
+} from 'react-router-dom';
 
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -15,6 +16,7 @@ import Dashboard from './components/Dashboard.jsx';
 import About from './components/About.jsx';
 
 import Master from './components/Master.jsx';
+import User from './components/User.jsx';
 import Company from './components/Company.jsx';
 import Unit from './components/Unit.jsx';
 import Product from './components/Product.jsx';
@@ -26,6 +28,8 @@ import Purchase from './components/Purchase.jsx';
 import Sale from './components/Sale.jsx';
 
 import Error from './Error';
+import Login from './pages/auth/Login.jsx';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 
 const AppLayout = () => {
     return (
@@ -47,24 +51,42 @@ const AppLayout = () => {
     );
 };
 
+const ProtectedLayout = () => {
+    const { isAuthenticated } = useAuth();
+
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return <AppLayout />;
+};
+
 const appRouter = createBrowserRouter([
     {
         path: "/",
-        element: <AppLayout />,
+        element: <ProtectedLayout />,
         errorElement: <Error />,
 
         children: [
             {
-                path: "/",
+                index: true,
+                element: <Dashboard />
+            },
+            {
+                path: "dashboard",
                 element: <Dashboard />
             },
 
             /* Nested Route */
             {
-                path: "/master",
+                path: "master",
                 element: <Master />,
 
                 children: [
+                    {
+                        path: "user",
+                        element: <User />
+                    },
                     {
                         path: "company",
                         element: <Company />
@@ -110,11 +132,18 @@ const appRouter = createBrowserRouter([
                 element: <About />
             },
         ]
+    },
+    {
+        path: "/login",
+        element: <Login />,
+        errorElement: <Error />
     }
 ]);
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>
-        <RouterProvider router={appRouter} />
+        <AuthProvider>
+            <RouterProvider router={appRouter} />
+        </AuthProvider>
     </StrictMode>
 );
