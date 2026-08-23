@@ -126,13 +126,23 @@ const Login = () => {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
-          >
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex flex-1 items-center justify-center rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+            >
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/forgot-password')}
+              className="inline-flex items-center justify-center text-sm font-semibold text-indigo-600 transition hover:text-indigo-700"
+            >
+              Forgot Password
+            </button>
+          </div>
         </form>
       </div>
     </div>

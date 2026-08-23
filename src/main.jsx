@@ -29,6 +29,9 @@ import Sale from './components/Sale.jsx';
 
 import Error from './Error';
 import Login from './pages/auth/Login.jsx';
+import ForgotPasswordRequest from './pages/auth/ForgotPasswordRequest.jsx';
+import ForgotPasswordVerifyOtp from './pages/auth/ForgotPasswordVerifyOtp.jsx';
+import ForgotPasswordReset from './pages/auth/ForgotPasswordReset.jsx';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 
 const AppLayout = () => {
@@ -136,6 +139,21 @@ const appRouter = createBrowserRouter([
     {
         path: "/login",
         element: <Login />,
+        errorElement: <Error />
+    },
+    {
+        path: "/forgot-password",
+        element: <ForgotPasswordRequest />,
+        errorElement: <Error />
+    },
+    {
+        path: "/forgot-password/verify-otp",
+        element: <ForgotPasswordVerifyOtp />,
+        errorElement: <Error />
+    },
+    {
+        path: "/forgot-password/reset",
+        element: <ForgotPasswordReset />,
         errorElement: <Error />
     }
 ]);
