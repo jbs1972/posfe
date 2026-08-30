@@ -1,0 +1,149 @@
+In my POS application frontend - going to implement customer section that has the following API endpoints:
+
+1.
+POST http://localhost:8080/api/customers
+
+Input JSON:
+{
+    "cname": "Amar Singh",
+    "cmobile": "9456874558",
+    "active": true
+}
+
+Output JSON:
+{
+    "status": 201,
+    "message": "Customer created successfully",
+    "data": {
+        "customerId": 4,
+        "cname": "Amar Singh",
+        "cmobile": "9456874558",
+        "active": true,
+        "createdAt": "2026-08-23T21:29:25.757494",
+        "updatedAt": "2026-08-23T21:29:25.757494"
+    },
+    "timestamp": "2026-08-23T21:29:25.7763225"
+}
+
+2.
+GET http://localhost:8080/api/customers/page?page=0&size=10
+
+Output JSON:
+{
+    "status": 200,
+    "message": "Customers retrieved successfully",
+    "data": {
+        "content": [
+            {
+                "customerId": 2,
+                "cname": "Ramesh Yadav",
+                "cmobile": "8331275858",
+                "active": true,
+                "createdAt": "2026-08-23T21:27:26.399935",
+                "updatedAt": "2026-08-23T21:27:26.399935"
+            },
+            {
+                "customerId": 3,
+                "cname": "Dinesh Tripathi",
+                "cmobile": "9001274558",
+                "active": true,
+                "createdAt": "2026-08-23T21:28:24.508518",
+                "updatedAt": "2026-08-23T21:28:24.508518"
+            },
+            {
+                "customerId": 4,
+                "cname": "Amar Singh",
+                "cmobile": "9456874558",
+                "active": true,
+                "createdAt": "2026-08-23T21:29:25.757494",
+                "updatedAt": "2026-08-23T21:29:25.757494"
+            }
+        ],
+        "pageable": {
+            "pageNumber": 0,
+            "pageSize": 10,
+            "sort": {
+                "empty": true,
+                "sorted": false,
+                "unsorted": true
+            },
+            "offset": 0,
+            "paged": true,
+            "unpaged": false
+        },
+        "last": true,
+        "totalElements": 3,
+        "totalPages": 1,
+        "size": 10,
+        "number": 0,
+        "sort": {
+            "empty": true,
+            "sorted": false,
+            "unsorted": true
+        },
+        "numberOfElements": 3,
+        "first": true,
+        "empty": false
+    },
+    "timestamp": "2026-08-23T21:32:21.757163"
+}
+
+3.
+GET http://localhost:8080/api/customers/3
+
+Output JSON:
+{
+    "status": 200,
+    "message": "Customer retrieved successfully",
+    "data": {
+        "customerId": 3,
+        "cname": "Dinesh Tripathi",
+        "cmobile": "9001274558",
+        "active": true,
+        "createdAt": "2026-08-23T21:28:24.508518",
+        "updatedAt": "2026-08-23T21:28:24.508518"
+    },
+    "timestamp": "2026-08-23T21:34:15.0746203"
+}
+
+4.
+PATCH http://localhost:8080/api/customers/3
+
+Input JSON:
+{
+    "active": false
+}
+
+Output JSON:
+{
+    "status": 200,
+    "message": "Customer updated successfully",
+    "data": {
+        "customerId": 3,
+        "cname": "Dinesh Tripathi",
+        "cmobile": "9001274558",
+        "active": false,
+        "createdAt": "2026-08-23T21:28:24.508518",
+        "updatedAt": "2026-08-23T21:37:15.264877"
+    },
+    "timestamp": "2026-08-23T21:37:15.3253859"
+}
+
+5.
+DELETE http://localhost:8080/api/customers/delete/3
+
+Output:
+204 no content.
+
+Provide the code for Customer.jsx according to the following requirements:
+
+2. Use tailwindcss
+3. Show the customer data in tabular form.
+4. Table should have two extra action columns Edit and Delete with icon interface.
+5. Must have a heading over the table and a right button to "Add Customer" using a modal for unit input. after save on the modal the parent table will be updated accordingly.
+6. Similarly implement the edit modal when clicked on edit button.
+7. On clicking the delete on a particular row ask for confirmation before final delete. and reflects on the parent table.
+8. Table will show 10 records and add a scrollbar automatically to scroll more records.
+9. Use professional look and not any bigger size on display - use modarate size
+10. Do everything on the same component "Customer.jsx".
+12. For design pattern Vendor.jsx.
